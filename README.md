@@ -33,6 +33,8 @@ or even better:
 python launch.py # deals with building and serving
 ```
 
+where it will be launched at [localhost:5000](localhost:5000)
+
 ## self hosting
 if you want to provide a system like this for your school, you can do so as the frontend and the backend can be run independently, so you are able to host your backend within the network and the frontend that already exists online. 
 
@@ -40,6 +42,8 @@ if you want to serve the backend and the frontend separately, use the launch scr
 ```bash
 python launch.py --split
 ```
+
+it will launch the frontend at [localhost:5173](http://localhost:5173) and the backend at [localhost:5000](http://localhost:5000). 
 
 > [!NOTE]
 > Currently not available as of this moment, but a couple tweaks can get it working. 

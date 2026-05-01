@@ -1,4 +1,4 @@
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, jsonify
 import os
 import sys
 
@@ -10,17 +10,22 @@ api_only = "--api-only" in sys.argv
 if api_only:
     app = Flask(__name__)
     print("Currently using API only configuration (flag passed with `--api-only`)")
-
-    @app.route("/")
-    def index():
-        return send_from_directory(assets_dir, "missing.html")
 else:
     app = Flask(__name__, static_folder=static_dir, static_url_path="")
     print("Currently using static-hosting configuration")
 
-    @app.route("/")
-    def index():
-        return send_from_directory(static_dir, "index.html")
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def index(path):
+    return send_from_directory(static_dir, "index.html")
+
+@app.route("/ping")
+def ping():
+    return jsonify("Pong!")
+
+@app.route("/api/papers")
+def get_papers():
+    ... # past papers, tbc
 
 if __name__ == "__main__":
     app.run()

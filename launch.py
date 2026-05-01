@@ -33,7 +33,7 @@ def build_frontend(js_runtime):
 
 
 def run_backend(api_only=False):
-    args = [sys.executable, "src/main.py"]
+    args = ["uv", "run", "src/main.py"]
     if api_only:
         args.append("--api-only")
     return subprocess.Popen(args, cwd=BACKEND)

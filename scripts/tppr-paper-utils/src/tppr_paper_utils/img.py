@@ -1,6 +1,7 @@
+import io
+
 import pymupdf as fitz
 from PIL import Image
-import io
 
 
 def extract_page_image(pdf_path: str, page_num: int, clip: tuple = None) -> Image.Image:

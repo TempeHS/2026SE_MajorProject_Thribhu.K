@@ -11,6 +11,7 @@ dependencies = [
     "flask-jwt-extended>=4.7.1",
     "flask-login>=0.6.3",
     "flask-sqlalchemy>=3.1.1",
+    "flask-swagger-ui>=5.32.5",
     "pydantic>=2.13.3",
     "pyotp>=2.9.0",
     "python-dotenv>=1.2.2",

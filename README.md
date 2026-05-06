@@ -23,8 +23,11 @@ firstly, you need to compile the frontend so it can be served by the backend:
 
 ```bash
 cd frontend
+
+bun install
 bun run build
 # or
+npm install
 npm run build
 # then
 cd ..

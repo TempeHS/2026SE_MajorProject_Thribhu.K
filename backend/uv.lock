@@ -163,6 +163,18 @@ wheels = [
 ]
 
 [[package]]
+name = "flask-swagger-ui"
+version = "5.32.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "flask" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/42/44/2a59d9b1b687415304d8f60f587f6f301548a01b7b1bc8239c538136f453/flask_swagger_ui-5.32.5.tar.gz", hash = "sha256:5785f18a43756b7f04c63fcb6cdd50187a352412df16a3d5a9afd60b7966fb97", size = 613331, upload-time = "2026-05-04T09:43:36.057Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ef/70/1cb178b8a62699fb2ab899a93e71b19f1640c8c10845cecfe7ee9bada69c/flask_swagger_ui-5.32.5-py3-none-any.whl", hash = "sha256:b92404e4a18877ffcc5d16b768ebbe55f04533ff1a2acfd2481a9c17a2b37b29", size = 618354, upload-time = "2026-05-04T09:43:34.542Z" },
+]
+
+[[package]]
 name = "greenlet"
 version = "3.5.0"
 source = { registry = "https://pypi.org/simple" }
@@ -406,6 +418,7 @@ dependencies = [
     { name = "flask-jwt-extended" },
     { name = "flask-login" },
     { name = "flask-sqlalchemy" },
+    { name = "flask-swagger-ui" },
     { name = "pydantic" },
     { name = "pyotp" },
     { name = "python-dotenv" },
@@ -422,6 +435,7 @@ requires-dist = [
     { name = "flask-jwt-extended", specifier = ">=4.7.1" },
     { name = "flask-login", specifier = ">=0.6.3" },
     { name = "flask-sqlalchemy", specifier = ">=3.1.1" },
+    { name = "flask-swagger-ui", specifier = ">=5.32.5" },
     { name = "pydantic", specifier = ">=2.13.3" },
     { name = "pyotp", specifier = ">=2.9.0" },
     { name = "python-dotenv", specifier = ">=1.2.2" },

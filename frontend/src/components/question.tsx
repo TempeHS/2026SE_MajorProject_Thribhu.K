@@ -109,6 +109,14 @@ const defaultMetadata: PaperMetadata = {
 
 const nullCharacter = String.fromCharCode(0)
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null
+  }
+
+  return value as Record<string, unknown>
+}
+
 function cleanQuestionText(value: unknown): string {
   if (value == null) {
     return ""
@@ -118,8 +126,17 @@ function cleanQuestionText(value: unknown): string {
     return value.map(cleanQuestionText).filter(Boolean).join("\n")
   }
 
-  if (typeof value === "object") {
-    return JSON.stringify(value)
+  const record = asRecord(value)
+  if (record) {
+    for (const key of ["text", "question", "prompt", "answer"]) {
+      const cleaned = cleanQuestionText(record[key])
+
+      if (cleaned) {
+        return cleaned
+      }
+    }
+
+    return ""
   }
 
   return String(value)
@@ -166,13 +183,26 @@ function getImageSources(...images: Array<string | string[] | undefined>) {
     .filter(Boolean)
 }
 
+function getBlockImages(value: unknown) {
+  const record = asRecord(value)
+
+  if (!record) {
+    return []
+  }
+
+  return getImageSources(record.image as string, record.images as string[])
+}
+
 function getStimulusImages(question: PaperQuestion) {
-  return getImageSources(
-    question.image,
-    question.stimulusImage,
-    question.stimulus_image,
-    question.images
-  )
+  return [
+    ...getBlockImages(question.stimulus),
+    ...getImageSources(
+      question.image,
+      question.stimulusImage,
+      question.stimulus_image,
+      question.images
+    ),
+  ]
 }
 
 function getAnswerPromptImages(question: PaperQuestion) {
@@ -274,14 +304,14 @@ function ImageStrip({ images, alt, className, imageClassName }: ImageStripProps)
   }
 
   return (
-    <div className={cn("grid justify-items-center gap-3", className)}>
+    <div className={cn("grid justify-items-center gap-2", className)}>
       {images.map((src, index) => (
         <img
           key={`${src.slice(0, 32)}-${index}`}
           src={src}
           alt={images.length === 1 ? alt : `${alt} ${index + 1}`}
           className={cn(
-            "max-h-[32vh] w-auto max-w-full rounded-md object-contain",
+            "max-h-[24vh] w-auto max-w-full rounded-md object-contain",
             imageClassName
           )}
           loading="lazy"
@@ -307,15 +337,15 @@ export default function Question({
     question ?? data?.questions?.[questionIndex] ?? defaultQuestion
   const questionLabel = getQuestionLabel(resolvedQuestion)
   const stimulusText = firstText(
+    resolvedQuestion.stimulus,
     resolvedQuestion.stimulusQuestion,
     resolvedQuestion.stimulus_question,
-    resolvedQuestion.stimulus,
     resolvedQuestion.context
   )
   const answerText = firstText(
+    resolvedQuestion.question,
     resolvedQuestion.questionToAnswer,
     resolvedQuestion.question_to_answer,
-    resolvedQuestion.question,
     resolvedQuestion.prompt,
     resolvedQuestion.answerText,
     resolvedQuestion.answer_text,
@@ -432,7 +462,7 @@ export default function Question({
             <ImageStrip
               images={stimulusImages}
               alt={`${questionLabel} stimulus`}
-              imageClassName="max-h-[28vh]"
+              imageClassName="max-h-[18vh]"
             />
 
             {(bottomText || answerPromptImages.length > 0) ? (
@@ -446,7 +476,7 @@ export default function Question({
             ) : null}
 
             {resolvedQuestion.options?.length ? (
-              <ol className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <ol className="grid grid-cols-2 gap-3">
                 {resolvedQuestion.options.map((option, index) => {
                   const label = cleanQuestionText(option.label) || String(index + 1)
                   const optionImages = getImageSources(option.image, option.images)
@@ -467,7 +497,7 @@ export default function Question({
                           images={optionImages}
                           alt={`${questionLabel} option ${label}`}
                           className="justify-items-start"
-                          imageClassName="max-h-[20vh]"
+                          imageClassName="max-h-[14vh]"
                         />
                       </div>
                     </li>

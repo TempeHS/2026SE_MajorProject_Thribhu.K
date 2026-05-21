@@ -85,7 +85,7 @@ class VisualExtractor:
             for word in words
             if q_top <= word["top"] <= min(option_top, q_bottom)
             and word["top"] > prompt_bottom + 2
-            and word["top"] <= visual_rect[3] + 12
+            and word["top"] <= visual_rect[3] + 6
             and self._is_visual_label(word, visual_rect, page)
         ]
         if nearby_word_rects:
@@ -94,7 +94,7 @@ class VisualExtractor:
         visual_rect = self._sandwich_visual_rect(
             visual_rect, words, q_top, prompt_bottom, option_top, page
         )
-        clip = expand_rect(visual_rect, 6, 6, page)
+        clip = expand_rect(visual_rect, 6, 2, page)
         logger.debug("Found stimulus clip on page %d: %s", page_idx + 1, clip)
         return clip
 
@@ -123,7 +123,8 @@ class VisualExtractor:
             attached += 1
 
         if attached:
-            logger.debug("Attached %d option images on page %d", attached, page_idx + 1)
+            logger.debug("Attached %d option images on page %d",
+                         attached, page_idx + 1)
 
     def render_page(self, page_num: int, zoom: float = 2.0) -> bytes:
         """Render a full page as PNG bytes (0-indexed)."""
@@ -182,7 +183,8 @@ class VisualExtractor:
             and q_top <= word["top"] <= q_bottom
         }
         if set(labels) != {"A", "B", "C", "D"}:
-            logger.debug("Option image labels were incomplete on page %d", page_idx + 1)
+            logger.debug(
+                "Option image labels were incomplete on page %d", page_idx + 1)
             return {}
 
         x_split = page.width / 2
@@ -220,8 +222,9 @@ class VisualExtractor:
             ]
             if nearby_word_rects:
                 visual_rect = union_rects([visual_rect, *nearby_word_rects])
+            visual_rect = rect_intersection(visual_rect, cell)
 
-            clips[label] = expand_rect(visual_rect, 6, 6, page)
+            clips[label] = expand_rect(visual_rect, 6, 2, page)
 
         return clips
 
@@ -233,7 +236,8 @@ class VisualExtractor:
             if not visual_rect[1] + 40 < line_top < min(visual_rect[3], option_top):
                 continue
 
-            line_text = " ".join(clean_text(word["text"]) for word in line_words)
+            line_text = " ".join(clean_text(
+                word["text"]) for word in line_words)
             if len(line_words) >= 3 and not all(
                 is_axis_or_tick_label(word) for word in line_text.split()
             ):
@@ -286,7 +290,8 @@ class VisualExtractor:
         for line_words in group_words_by_line(words):
             line_top = min(word["top"] for word in line_words)
             if question_top <= line_top < visual_top - 4:
-                prompt_line_bottoms.append(max(word["bottom"] for word in line_words))
+                prompt_line_bottoms.append(
+                    max(word["bottom"] for word in line_words))
         return max(prompt_line_bottoms, default=fallback)
 
     def _followup_text_top(
@@ -297,7 +302,8 @@ class VisualExtractor:
             if not visual_rect[3] + 2 < line_top < option_top:
                 continue
 
-            line_text = " ".join(clean_text(word["text"]) for word in line_words)
+            line_text = " ".join(clean_text(
+                word["text"]) for word in line_words)
             line_rect = union_rects(
                 [
                     (word["x0"], word["top"], word["x1"], word["bottom"])

@@ -19,7 +19,7 @@ def clean_text(text: str) -> str:
         })
     )
     text = re.sub(r"[ \t]+", " ", text)
-    text = re.sub(r"\s*\n\s*", "\n", text)
+    text = re.sub(r"[ \t]*\n[ \t]*", "\n", text)
     return text.strip()
 
 
@@ -55,6 +55,7 @@ def clean_option_value(value: str) -> str:
 
 def question_latex(text: str) -> str:
     latex = text
+    latex = re.sub(r"\s+\(\s*\)\s*$", "", latex)
 
     latex = re.sub(
         r"What is 1 dx\? x \+ 5",
@@ -215,13 +216,13 @@ def split_stimulus_and_prompt(text: str) -> tuple[str, str]:
     if not cleaned:
         return "", ""
 
-    sentences = [
-        sentence.strip()
-        for sentence in re.split(r"(?<=[.?!])\s+", cleaned)
-        if sentence.strip()
-    ]
-
-    if len(sentences) >= 2 and sentences[-1].endswith("?"):
-        return " ".join(sentences[:-1]), sentences[-1]
+    if cleaned.endswith("?"):
+        boundaries = list(re.finditer(r"(?<=[.?!])\s+", cleaned))
+        if boundaries:
+            boundary = boundaries[-1]
+            stimulus = cleaned[: boundary.start()].strip()
+            prompt = cleaned[boundary.end() :].strip()
+            if stimulus and prompt:
+                return stimulus, prompt
 
     return "", cleaned

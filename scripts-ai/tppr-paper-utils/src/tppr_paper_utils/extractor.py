@@ -8,6 +8,7 @@ from pathlib import Path
 import pdfplumber
 import pymupdf as fitz
 
+from .manifest import PaperManifest, PaperMetadataManifest
 from .questions import QuestionExtractor
 from .text import clean_text
 from .visual import VisualExtractor
@@ -32,7 +33,7 @@ class TPPRExtractor:
 
         self._visual = VisualExtractor(self._fitz_doc)
 
-    def extract(self) -> dict:
+    def extract(self) -> PaperManifest:
         logger.info("Starting TPPR extraction")
         pages: list[dict[str, str | int]] = []
         for i, page in enumerate(self.pdf.pages):
@@ -77,9 +78,9 @@ class TPPRExtractor:
     def __exit__(self, *args):
         self.close()
 
-    def _extract_metadata(self, text: str) -> dict:
+    def _extract_metadata(self, text: str) -> PaperMetadataManifest:
         """Extract paper metadata from the first page."""
-        meta = {}
+        meta: PaperMetadataManifest = {}
 
         year_match = re.search(r"(20\d{2})", text)
         if year_match:

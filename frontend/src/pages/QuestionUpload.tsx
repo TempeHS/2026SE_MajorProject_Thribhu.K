@@ -34,6 +34,14 @@ import { RelativeTimeCard } from "@/components/ui/relative-time-card"
 const maxJsonSize = 12 * 1024 * 1024
 const nullCharacter = String.fromCharCode(0)
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null
+  }
+
+  return value as Record<string, unknown>
+}
+
 function cleanText(value: unknown): string {
   if (value == null) {
     return ""
@@ -43,8 +51,17 @@ function cleanText(value: unknown): string {
     return value.map(cleanText).filter(Boolean).join("\n")
   }
 
-  if (typeof value === "object") {
-    return JSON.stringify(value)
+  const record = asRecord(value)
+  if (record) {
+    for (const key of ["text", "question", "prompt", "answer"]) {
+      const cleaned = cleanText(record[key])
+
+      if (cleaned) {
+        return cleaned
+      }
+    }
+
+    return ""
   }
 
   return String(value)
@@ -122,9 +139,17 @@ function getQuestionText(question: PaperQuestion) {
   )
 }
 
+function hasBlockImage(value: unknown) {
+  const record = asRecord(value)
+
+  return Boolean(record?.image || (record?.images as unknown[] | undefined)?.[0])
+}
+
 function hasQuestionImage(question: PaperQuestion) {
   return Boolean(
-    question.image ||
+    hasBlockImage(question.stimulus) ||
+      hasBlockImage(question.question) ||
+      question.image ||
       question.stimulusImage ||
       question.stimulus_image ||
       question.images?.[0] ||

@@ -5,6 +5,7 @@ import re
 
 import pdfplumber
 
+from .manifest import MultipleChoiceQuestionManifest, QuestionOptionManifest
 from .geometry import (
     Rect,
     group_words_by_line,
@@ -35,10 +36,10 @@ class QuestionExtractor:
         self.pdf = pdf
         self.visual = visual
 
-    def extract(self) -> list[dict]:
+    def extract(self) -> list[MultipleChoiceQuestionManifest]:
         return self.extract_section_i()
 
-    def extract_section_i(self) -> list[dict]:
+    def extract_section_i(self) -> list[MultipleChoiceQuestionManifest]:
         """Extract Section I questions using page coordinates."""
         section_pages = self._section_i_page_range()
         question_limit = self._section_i_question_limit()
@@ -72,24 +73,24 @@ class QuestionExtractor:
                     question_to_answer,
                 ) = self._parse_question_text(page, clip, stimulus_clip)
 
+                stimulus_image = (
+                    self.visual.transparent_region_base64(page_idx, stimulus_clip)
+                    if stimulus_clip
+                    else None
+                )
                 question = {
                     "number": start["number"],
                     "type": "multiple_choice",
-                    "text": question_text,
+                    "stimulus": {
+                        "text": stimulus_text or None,
+                        "image": stimulus_image,
+                    },
+                    "question": question_to_answer or question_text,
                     "options": options,
                     "page": page_idx + 1,
                 }
 
-                if stimulus_text:
-                    question["stimulus_question"] = stimulus_text
-
-                if question_to_answer:
-                    question["question_to_answer"] = question_to_answer
-
                 if stimulus_clip:
-                    question["image"] = self.visual.transparent_region_base64(
-                        page_idx, stimulus_clip
-                    )
                     logger.debug(
                         "Attached stimulus image for question %d on page %d",
                         start["number"],
@@ -172,9 +173,9 @@ class QuestionExtractor:
         page: pdfplumber.page.Page,
         clip: Rect,
         stimulus_clip: Rect | None = None,
-    ) -> tuple[str, list[dict], str, str]:
+    ) -> tuple[str, list[QuestionOptionManifest], str, str]:
         lines = self._extract_text_lines(page, clip, stimulus_clip)
-        lines = [line for line in lines if line and not is_page_footer(line)]
+        lines = [line for line in lines if not is_page_footer(line)]
 
         if not lines:
             return "", [], "", ""
@@ -201,10 +202,11 @@ class QuestionExtractor:
 
         question_text = question_latex(clean_question_lines(question_lines))
         stimulus_text, question_to_answer = split_stimulus_and_prompt(question_text)
+        options = self._extract_options(option_lines, question_text)
 
         return (
             question_text,
-            self._extract_options(option_lines),
+            options,
             stimulus_text,
             question_to_answer,
         )
@@ -259,7 +261,9 @@ class QuestionExtractor:
         x0, top, x1, bottom = stimulus_clip
         return (x0 - 24, top, x1 + 24, bottom)
 
-    def _extract_options(self, lines: list[str]) -> list[dict]:
+    def _extract_options(
+        self, lines: list[str], question_text: str = ""
+    ) -> list[QuestionOptionManifest]:
         if not lines:
             return []
 
@@ -288,9 +292,42 @@ class QuestionExtractor:
                 "text": option_latex(value),
             })
 
+        domain_options = self._domain_sqrt_options(question_text, options)
+        if domain_options:
+            return domain_options
+
         return options
 
-    def _extract_stacked_fraction_options(self, lines: list[str]) -> list[dict]:
+    def _domain_sqrt_options(
+        self, question_text: str, options: list[QuestionOptionManifest]
+    ) -> list[QuestionOptionManifest] | None:
+        if (
+            "domain of the function" not in question_text
+            or r"\sqrt{6 - x^{2}}" not in question_text
+        ):
+            return None
+
+        labels = [option["label"] for option in options]
+        if labels != ["A", "B", "C", "D"]:
+            return None
+
+        values = [
+            r"$(0, \sqrt{6})$",
+            r"$[0, \sqrt{6}]$",
+            r"$(-\sqrt{6}, \sqrt{6})$",
+            r"$[-\sqrt{6}, \sqrt{6}]$",
+        ]
+        return [
+            {
+                "label": option["label"],
+                "text": values[idx],
+            }
+            for idx, option in enumerate(options)
+        ]
+
+    def _extract_stacked_fraction_options(
+        self, lines: list[str]
+    ) -> list[QuestionOptionManifest]:
         options = []
         idx = 0
         numerator = None

@@ -22,21 +22,13 @@ this python-typescript project uses **uv** for the backend and **bun** or **node
 firstly, you need to compile the frontend so it can be served by the backend:
 
 ```bash
-cd frontend
-
-bun install
-bun run build
-# or
 npm install
 npm run build
-# then
-cd ..
 ```
 
 then, you can serve the website:
 
 ```bash
-cd backend
 uv run src/main.py
 ```
 

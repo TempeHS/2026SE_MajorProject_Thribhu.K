@@ -1,9 +1,9 @@
-import subprocess
-import sys
 import os
 import shutil
-import time
+import subprocess
+import sys
 import threading
+import time
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 FRONTEND = os.path.join(ROOT, "frontend")
@@ -205,8 +205,16 @@ if __name__ == "__main__":
 
         frontend_watcher = FileWatcher(
             watch_dirs=[frontend_src],
-            extensions=[".ts", ".tsx", ".js", ".jsx",
-                        ".vue", ".svelte", ".css", ".html"],
+            extensions=[
+                ".ts",
+                ".tsx",
+                ".js",
+                ".jsx",
+                ".vue",
+                ".svelte",
+                ".css",
+                ".html",
+            ],
             callback=on_frontend_change,
             debounce=2.0,
         )

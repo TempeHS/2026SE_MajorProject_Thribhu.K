@@ -11,9 +11,12 @@ Currently, _tppr_ is configured so the backend deals with serving the website (w
 ### compiling
 
 ```bash
-bun run build
-# or
+# from the repo root
+npm install
 npm run build
+# or, with bun from this folder
+bun install
+bun run build
 ```
 
 ## running independently
@@ -21,7 +24,8 @@ npm run build
 the website can also be run independently:
 
 ```bash
-bun run dev
-# or
+# from the repo root
 npm run dev
+# or, with bun from this folder
+bun run dev
 ```

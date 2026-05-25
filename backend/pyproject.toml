@@ -18,8 +18,7 @@ dependencies = [
     "qrcode[pil]>=8.2",
     "typing>=3.10.0.0",
     "werkzeug>=3.1.8",
-    "tppr-paper-utils"
 ]
 
 [tool.uv.sources]
-tppr-paper-utils = { path = "../scripts/tppr-paper-utils", editable = true }
+tppr-paper-utils = { workspace = true }

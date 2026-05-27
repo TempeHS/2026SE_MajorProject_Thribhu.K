@@ -1,26 +1,20 @@
-import logging
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+TEST_DIR = Path(__file__).parent
+PDF_FIXTURES = [
+    TEST_DIR / "2020-hsc-mathematics-advanced.pdf",
+    TEST_DIR / "2024-hsc-maths-ext-1.pdf",
+    TEST_DIR / "2025-hsc-maths-advanced.pdf",
+]
 
 
-class TPPRPackageLogFilter(logging.Filter):
-    def filter(self, record: logging.LogRecord) -> bool:
-        return record.name.startswith("tppr_paper_utils")
-
-
-def pytest_configure(config):
-    # logging support
-    logging_plugin = config.pluginmanager.get_plugin("logging-plugin")
-    if not logging_plugin:
-        return
-
-    package_filter = TPPRPackageLogFilter()
-    logging_plugin.log_cli_handler.addFilter(package_filter)
-
-
-def pytest_runtest_setup(item):
-    logging.getLogger().setLevel(logging.WARNING)
-    logging.getLogger("tppr_paper_utils").setLevel(logging.DEBUG)
-
-    logging_plugin = item.config.pluginmanager.get_plugin("logging-plugin")
-    if logging_plugin:
-        logging_plugin.log_cli_handler.setLevel(logging.DEBUG)
-    logging_plugin.log_cli_handler.setLevel(logging.DEBUG)
+@pytest.fixture(params=PDF_FIXTURES, ids=lambda path: path.name)
+def pdf_fixture(request: pytest.FixtureRequest) -> Path:
+    path = request.param
+    if not path.exists():
+        pytest.skip(f"PDF fixture is missing: {path.name}")
+    return path

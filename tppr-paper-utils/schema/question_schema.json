@@ -1,58 +1,396 @@
 {
-  "type": "object",
-  "properties": {
-    "stimulus": {
-      "type": "object",
+  "$defs": {
+    "AssetRef": {
+      "additionalProperties": false,
       "properties": {
-        "text": {
+        "url": {
+          "title": "Url",
           "type": "string"
         },
-        "assetURL": {
+        "mime_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mime Type"
+        },
+        "source_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Ref"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page"
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "title": "AssetRef",
+      "type": "object"
+    },
+    "ChoiceOption": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "pattern": "^[A-Z]+$",
+          "title": "Label",
+          "type": "string"
+        },
+        "content": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "image": "#/$defs/ImageBlock",
+                "table": "#/$defs/TableBlock",
+                "text": "#/$defs/TextBlock"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/TextBlock"
+              },
+              {
+                "$ref": "#/$defs/ImageBlock"
+              },
+              {
+                "$ref": "#/$defs/TableBlock"
+              }
+            ]
+          },
+          "minItems": 1,
+          "title": "Content",
+          "type": "array"
+        }
+      },
+      "required": [
+        "label",
+        "content"
+      ],
+      "title": "ChoiceOption",
+      "type": "object"
+    },
+    "ImageBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "image",
+          "default": "image",
+          "title": "Kind",
+          "type": "string"
+        },
+        "asset": {
+          "$ref": "#/$defs/AssetRef"
+        }
+      },
+      "required": [
+        "asset"
+      ],
+      "title": "ImageBlock",
+      "type": "object"
+    },
+    "ParsedQuestion": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "tppr.question.v2",
+          "default": "tppr.question.v2",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "paper_id": {
+          "default": "",
+          "title": "Paper Id",
+          "type": "string"
+        },
+        "number": {
+          "minimum": 1,
+          "title": "Number",
+          "type": "integer"
+        },
+        "type": {
+          "enum": [
+            "multiple_choice",
+            "long_answer"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "marks": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Marks",
+          "type": "integer"
+        },
+        "pages": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Pages",
+          "type": "array"
+        },
+        "stimulus": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "image": "#/$defs/ImageBlock",
+                "table": "#/$defs/TableBlock",
+                "text": "#/$defs/TextBlock"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/TextBlock"
+              },
+              {
+                "$ref": "#/$defs/ImageBlock"
+              },
+              {
+                "$ref": "#/$defs/TableBlock"
+              }
+            ]
+          },
+          "title": "Stimulus",
+          "type": "array"
+        },
+        "question": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "image": "#/$defs/ImageBlock",
+                "table": "#/$defs/TableBlock",
+                "text": "#/$defs/TextBlock"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/TextBlock"
+              },
+              {
+                "$ref": "#/$defs/ImageBlock"
+              },
+              {
+                "$ref": "#/$defs/TableBlock"
+              }
+            ]
+          },
+          "title": "Question",
+          "type": "array"
+        },
+        "parts": {
+          "items": {
+            "$ref": "#/$defs/QuestionPart"
+          },
+          "title": "Parts",
+          "type": "array"
+        },
+        "options": {
+          "items": {
+            "$ref": "#/$defs/ChoiceOption"
+          },
+          "title": "Options",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "number",
+        "type"
+      ],
+      "title": "ParsedQuestion",
+      "type": "object"
+    },
+    "QuestionPart": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "stimulus": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "image": "#/$defs/ImageBlock",
+                "table": "#/$defs/TableBlock",
+                "text": "#/$defs/TextBlock"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/TextBlock"
+              },
+              {
+                "$ref": "#/$defs/ImageBlock"
+              },
+              {
+                "$ref": "#/$defs/TableBlock"
+              }
+            ]
+          },
+          "title": "Stimulus",
+          "type": "array"
+        },
+        "question": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "image": "#/$defs/ImageBlock",
+                "table": "#/$defs/TableBlock",
+                "text": "#/$defs/TextBlock"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/TextBlock"
+              },
+              {
+                "$ref": "#/$defs/ImageBlock"
+              },
+              {
+                "$ref": "#/$defs/TableBlock"
+              }
+            ]
+          },
+          "minItems": 1,
+          "title": "Question",
+          "type": "array"
+        },
+        "marks": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Marks"
+        }
+      },
+      "required": [
+        "question"
+      ],
+      "title": "QuestionPart",
+      "type": "object"
+    },
+    "TableBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "table",
+          "default": "table",
+          "title": "Kind",
+          "type": "string"
+        },
+        "html": {
+          "minLength": 1,
+          "title": "Html",
+          "type": "string"
+        },
+        "asset": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AssetRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "html"
+      ],
+      "title": "TableBlock",
+      "type": "object"
+    },
+    "TextBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "text",
+          "default": "text",
+          "title": "Kind",
+          "type": "string"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
           "type": "string"
         }
-      }
-    },
-    "parts": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "stimulus": {
-            "type": "object",
-            "properties": {
-              "text": {
-                "type": "string"
-              },
-              "assetURL": {
-                "type": "string"
-              }
-            }
-          },
-          "question": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "questionType": {
-      "type": "string",
-      "enum": ["long_answer", "multiple_choice"]
-    },
-    "questionIndex": {
-      "type": "string"
-    },
-    "marks": {
-      "type": "integer"
-    },
-    "ID_OF_OG_PDF": {
-      "type": "string"
+      },
+      "required": [
+        "text"
+      ],
+      "title": "TextBlock",
+      "type": "object"
     }
   },
-  "required": [
-    "parts",
-    "questionType",
-    "questionIndex",
-    "marks",
-    "ID_OF_OG_PDF"
-  ]
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "tppr.paper.v2",
+      "default": "tppr.paper.v2",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "metadata": {
+      "additionalProperties": true,
+      "title": "Metadata",
+      "type": "object"
+    },
+    "questions": {
+      "items": {
+        "$ref": "#/$defs/ParsedQuestion"
+      },
+      "title": "Questions",
+      "type": "array"
+    }
+  },
+  "title": "ParsedPaper",
+  "type": "object"
 }

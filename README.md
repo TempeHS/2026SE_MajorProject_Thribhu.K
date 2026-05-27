@@ -39,5 +39,9 @@ uv run launch.py --split
 
 it will launch the frontend at [localhost:5173](http://localhost:5173) and the backend at [localhost:5000](http://localhost:5000).
 
-> [!NOTE]
-> Currently not available as of this moment, but a couple tweaks can get it working.
+### AI Usage
+This disclaimer is required by markers. 
+
+Certain files and scripts were generated fully with the use of AI. Specific ones will be signified with a warning at the top of the file/script. 
+
+Although AI was used, the entire design, idea and infrastructure decisions were done by humans, as well as many files in the repository.

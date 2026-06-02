@@ -38,13 +38,6 @@ try:
     Table = import_module("rich.table").Table
     Text = import_module("rich.text").Text
 except ModuleNotFoundError:
-    uv = find_command("uv")
-    if uv and not os.environ.get("TPPR_LAUNCHER_BOOTSTRAPPED"):
-        env = os.environ.copy()
-        env["TPPR_LAUNCHER_BOOTSTRAPPED"] = "1"
-        completed = subprocess.run([uv, "run", __file__, *sys.argv[1:]], env=env)
-        sys.exit(completed.returncode)
-
     print(
         "Rich is required for the launcher TUI. Run with `uv run launch.py` or install `rich>=13.7.0`."
     )

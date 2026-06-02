@@ -3,12 +3,13 @@ import sys
 from datetime import timedelta
 
 import auth
-import db
 import swagger
+from auth.db import AuthenticationDB
 from dotenv import load_dotenv
 from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+from questions.endpoints import q_bp
 from shared import BLOCKLIST
 
 load_dotenv()
@@ -76,6 +77,7 @@ def page_not_found(e):
 
 auth.register_blueprint(app)
 swagger.register_blueprint(app)
+app.register_blueprint(q_bp)
 
 
 # --- do not add code any further than this line, or else...👻👻👻 ---
@@ -88,5 +90,6 @@ for rule in sorted(app.url_map.iter_rules(), key=lambda r: r.rule):
 print()
 
 if __name__ == "__main__":
-    db.prepare(app.logger)
+    auth_db = AuthenticationDB()
+    auth_db.prepare(app.logger)
     app.run(debug=True, host="0.0.0.0", port=5000)

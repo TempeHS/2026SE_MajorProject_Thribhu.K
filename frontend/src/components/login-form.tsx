@@ -15,14 +15,17 @@ import {
   FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { useAuth } from "@/api/auth"
 import { useState } from "react"
+import { toast } from "sonner"
 
 export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
   const [error, setError] = useState("")
   const { login } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const redirectTo = searchParams.get("redirect") || "/"
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -31,7 +34,8 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
     if (err) {
       setError(err)
     } else {
-      navigate("/")
+      toast.success("Signed in successfully")
+      navigate(redirectTo)
     }
   }
   return (

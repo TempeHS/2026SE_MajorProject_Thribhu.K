@@ -1,22 +1,27 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-// import NavBar from './components/navbar'
 import Login from './pages/Login'
 import Landing from './pages/Landing'
 import Signup from './pages/Signup'
-import QuestionUpload from './pages/QuestionUpload'
+import Papers from './pages/Papers'
+import PaperEditor from './pages/PaperEditor'
 import { AuthProvider } from './api/auth'
+import { Toaster } from '@/components/ui/sonner'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 function App() {
   return (
     <BrowserRouter>
-      {/* <NavBar /> */}
       <AuthProvider>
+      <TooltipProvider>
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path='/signup' element={<Signup />} />
-        <Route path="/questions/upload" element={<QuestionUpload />} />
+        <Route path="/questions" element={<Papers />} />
+        <Route path="/questions/:paperId" element={<PaperEditor />} />
       </Routes>
+      <Toaster />
+      </TooltipProvider>
       </AuthProvider>
     </BrowserRouter>
   )

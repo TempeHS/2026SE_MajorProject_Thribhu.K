@@ -15,8 +15,9 @@ import {
   FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Link } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import { useState } from "react"
+import { toast } from "sonner"
 
 export function SignupForm({
   className,
@@ -25,12 +26,13 @@ export function SignupForm({
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState("")
+  const [searchParams] = useSearchParams()
+  const redirectTo = searchParams.get("redirect") || "/"
 
   function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
-      console.log("passwords do not")
       return
     }
     setError("")
@@ -42,10 +44,11 @@ export function SignupForm({
       .then((res) => res.json())
       .then((data) => {
         if (data.requires_2fa === false && data.user) {
-          window.location.href = '/'
+          toast.success("Account created successfully")
+          window.location.href = redirectTo
         } else if (data.requires_2fa === true) {
-          // handle 2FA setup flow
-          window.location.href = '/login'
+          toast.success("Account created — please log in")
+          window.location.href = `/login?redirect=${encodeURIComponent(redirectTo)}`
         } else {
           setError(data.message || 'Signup failed')
         }
@@ -83,7 +86,7 @@ export function SignupForm({
                 />
                 <FieldDescription>
                   We&apos;ll use this to contact you. We will not share your email
-                  with anyone else. Wallahi. 
+                  with anyone else. Wallahi.
                 </FieldDescription>
               </Field>
               <Field>

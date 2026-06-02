@@ -1,513 +1,305 @@
-import { ArrowLeft, FileText } from "lucide-react"
-import Latex from "react-latex-next"
+import { useState } from "react"
+import katex from "katex"
 import "katex/dist/katex.min.css"
 
-import NavBar from "@/components/navbar"
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card"
 import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Label } from "@/components/ui/label"
 
-export type PaperMetadata = {
-  year?: string | number
-  paper?: string
-  sections?: Array<{
-    name?: string
-    marks?: string | number
-    pages?: string
-  }>
-}
+import type {
+  Question as QuestionData,
+  ContentBlock,
+  ChoiceOption,
+  QuestionPart,
+} from "@/types/question"
 
-export type QuestionOption = {
-  label?: string
-  text?: unknown
-  image?: string
-  images?: string[]
-}
+// --- LaTeX rendering ---
 
-export type PaperQuestion = {
-  number?: string | number
-  type?: string
-  text?: unknown
-  prompt?: unknown
-  question?: unknown
-  question_to_answer?: unknown
-  questionToAnswer?: unknown
-  stimulus?: unknown
-  stimulus_question?: unknown
-  stimulusQuestion?: unknown
-  context?: unknown
-  image?: string
-  images?: string[]
-  stimulus_image?: string
-  stimulusImage?: string
-  answer?: unknown
-  answer_text?: unknown
-  answerText?: unknown
-  answer_image?: string
-  answerImage?: string
-  answer_images?: string[]
-  answerImages?: string[]
-  prompt_image?: string
-  promptImage?: string
-  prompt_images?: string[]
-  promptImages?: string[]
-  options?: QuestionOption[]
-  marks?: string | number
-  page?: string | number
-}
-
-export type PaperOutput = {
-  metadata?: PaperMetadata
-  questions?: PaperQuestion[]
-}
-
-export type PdfRequest = {
-  metadata: PaperMetadata
-  question: PaperQuestion
-  page?: string | number
-}
-
-type LatexTextProps = {
-  text: unknown
-  className?: string
-}
-
-type QuestionProps = {
-  data?: PaperOutput
-  metadata?: PaperMetadata
-  question?: PaperQuestion
-  questionIndex?: number
-  showNav?: boolean
-  className?: string
-  onOpenPdf?: (request: PdfRequest) => void
-  onBack?: () => void
-  backLabel?: string
-}
-
-const defaultQuestion: PaperQuestion = {
-  number: 3,
-  type: "multiple_choice",
-  text: "What is the value of P (X = 3)?",
-  marks: 1,
-}
-
-const defaultMetadata: PaperMetadata = {
-  paper: "Mathematics Advanced",
-  year: 2025,
-}
-
-const nullCharacter = String.fromCharCode(0)
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return null
-  }
-
-  return value as Record<string, unknown>
-}
-
-function cleanQuestionText(value: unknown): string {
-  if (value == null) {
-    return ""
-  }
-
-  if (Array.isArray(value)) {
-    return value.map(cleanQuestionText).filter(Boolean).join("\n")
-  }
-
-  const record = asRecord(value)
-  if (record) {
-    for (const key of ["text", "question", "prompt", "answer"]) {
-      const cleaned = cleanQuestionText(record[key])
-
-      if (cleaned) {
-        return cleaned
-      }
+function renderLatex(text: string): string {
+  // Replace display math $$...$$ first, then inline $...$
+  let result = text.replace(/\$\$(.+?)\$\$/gs, (_match, expr) => {
+    try {
+      return katex.renderToString(expr, { displayMode: true, throwOnError: false })
+    } catch {
+      return _match
     }
-
-    return ""
-  }
-
-  return String(value)
-    .split(nullCharacter)
-    .join("")
-    .replace(/[\u200B-\u200D\uFEFF]/g, "")
-    .replace(/\r\n?/g, "\n")
-    .replace(/[^\S\n]+/g, " ")
-    .replace(/ *\n */g, "\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim()
-}
-
-function firstText(...values: unknown[]): string {
-  for (const value of values) {
-    const cleaned = cleanQuestionText(value)
-
-    if (cleaned) {
-      return cleaned
+  })
+  result = result.replace(/\$(.+?)\$/g, (_match, expr) => {
+    try {
+      return katex.renderToString(expr, { displayMode: false, throwOnError: false })
+    } catch {
+      return _match
     }
+  })
+  return result
+}
+
+function renderLatexInHtml(html: string): string {
+  // Process text nodes inside HTML that may contain LaTeX
+  // Match content between > and < (text nodes inside tags)
+  return html.replace(/>([^<]+)</g, (_match, text) => {
+    if (text.includes("$")) {
+      return `>${renderLatex(text)}<`
+    }
+    return _match
+  })
+}
+
+// --- Content rendering ---
+
+function TextContent({ text }: { text: string }) {
+  const hasLatex = text.includes("$")
+  if (!hasLatex) {
+    return <p className="whitespace-pre-wrap">{text}</p>
   }
-
-  return ""
+  const html = renderLatex(text)
+  return <p className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: html }} />
 }
 
-function asImageSource(image?: string): string {
-  const source = String(image ?? "").replace(/\s/g, "")
-
-  if (!source) {
-    return ""
-  }
-
-  if (/^(https?:|blob:|data:image\/)/i.test(source)) {
-    return source
-  }
-
-  return `data:image/png;base64,${source}`
-}
-
-function getImageSources(...images: Array<string | string[] | undefined>) {
-  return images
-    .flatMap((image) => (Array.isArray(image) ? image : [image]))
-    .map(asImageSource)
-    .filter(Boolean)
-}
-
-function getBlockImages(value: unknown) {
-  const record = asRecord(value)
-
-  if (!record) {
-    return []
-  }
-
-  return getImageSources(record.image as string, record.images as string[])
-}
-
-function getStimulusImages(question: PaperQuestion) {
-  return [
-    ...getBlockImages(question.stimulus),
-    ...getImageSources(
-      question.image,
-      question.stimulusImage,
-      question.stimulus_image,
-      question.images
-    ),
-  ]
-}
-
-function getAnswerPromptImages(question: PaperQuestion) {
-  return getImageSources(
-    question.answerImage,
-    question.answer_image,
-    question.answerImages,
-    question.answer_images,
-    question.promptImage,
-    question.prompt_image,
-    question.promptImages,
-    question.prompt_images
-  )
-}
-
-function getQuestionLabel(question: PaperQuestion): string {
-  const number = cleanQuestionText(question.number)
-  return number ? `Question ${number}` : "Question"
-}
-
-function getMarks(question: PaperQuestion): string {
-  const explicitMarks = cleanQuestionText(question.marks)
-
-  if (explicitMarks) {
-    return explicitMarks
-  }
-
-  return question.type === "multiple_choice" ? "1" : "Not listed"
-}
-
-function formatMarks(question: PaperQuestion): string {
-  const marks = getMarks(question)
-
-  if (marks === "Not listed") {
-    return marks
-  }
-
-  return Number(marks) === 1 ? "1 mark" : `${marks} marks`
-}
-
-function getDisplayType(type?: string): string {
-  return cleanQuestionText(type)
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase())
-}
-
-function getSectionForPage(metadata: PaperMetadata, page: string | number | undefined) {
-  const pageNumber = Number(page)
-
-  if (!Number.isFinite(pageNumber)) {
-    return null
-  }
-
-  return (
-    metadata.sections?.find((section) => {
-      const pages = cleanQuestionText(section.pages)
-      const match = pages.match(/(\d+)\s*[–-]\s*(\d+)/) ?? pages.match(/(\d+)/)
-
-      if (!match) {
-        return false
-      }
-
-      const start = Number(match[1])
-      const end = Number(match[2] ?? match[1])
-
-      return pageNumber >= start && pageNumber <= end
-    }) ?? null
-  )
-}
-
-function openPdfStub(request: PdfRequest) {
-  console.info("PDF retrieval stub", request)
-}
-
-export function LatexText({ text, className }: LatexTextProps) {
-  const cleaned = cleanQuestionText(text)
-
-  if (!cleaned) {
-    return null
-  }
-
-  return (
-    <span className={cn("whitespace-pre-line leading-7", className)}>
-      <Latex>{cleaned}</Latex>
-    </span>
-  )
-}
-
-type ImageStripProps = {
-  images: string[]
-  alt: string
-  className?: string
-  imageClassName?: string
-}
-
-function ImageStrip({ images, alt, className, imageClassName }: ImageStripProps) {
-  if (images.length === 0) {
-    return null
-  }
-
-  return (
-    <div className={cn("grid justify-items-center gap-2", className)}>
-      {images.map((src, index) => (
+function ContentBlockView({ block, imageScale = 1 }: { block: ContentBlock; imageScale?: number }) {
+  switch (block.kind) {
+    case "text":
+      return <TextContent text={block.text} />
+    case "image": {
+      const baseWidth = block.width ?? 400
+      const scaledWidth = baseWidth * imageScale
+      return (
         <img
-          key={`${src.slice(0, 32)}-${index}`}
-          src={src}
-          alt={images.length === 1 ? alt : `${alt} ${index + 1}`}
-          className={cn(
-            "max-h-[24vh] w-auto max-w-full rounded-md object-contain",
-            imageClassName
-          )}
-          loading="lazy"
+          src={block.url}
+          alt={block.alt ?? ""}
+          className={cn("rounded-md object-contain", imageScale > 1 && "mx-auto")}
+          style={{
+            maxWidth: `${scaledWidth}px`,
+            height: block.height ? `${block.height * imageScale}px` : "auto",
+          }}
         />
+      )
+    }
+    case "table":
+      return (
+        <div
+          className="mx-auto w-fit overflow-x-auto rounded-md border [&_td]:border [&_td]:px-2 [&_td]:py-1 [&_td]:text-center [&_th]:border [&_th]:px-2 [&_th]:py-1 [&_th]:text-center"
+          dangerouslySetInnerHTML={{ __html: renderLatexInHtml(block.html) }}
+        />
+      )
+  }
+}
+
+function ContentBlocks({ blocks, imageScale = 1 }: { blocks: ContentBlock[]; imageScale?: number }) {
+  return (
+    <div className="flex flex-col gap-2">
+      {blocks.map((block, i) => (
+        <ContentBlockView key={i} block={block} imageScale={imageScale} />
       ))}
     </div>
   )
 }
 
-export default function Question({
-  data,
-  metadata,
+// --- Sub-components ---
+
+function Stimulus({ blocks, imageScale }: { blocks: ContentBlock[]; imageScale?: number }) {
+  return <ContentBlocks blocks={blocks} imageScale={imageScale} />
+}
+
+function MultipleChoiceOptions({
+  questionId,
+  options,
+  selected,
+  answer,
+  onSelect,
+}: {
+  questionId: string
+  options: ChoiceOption[]
+  selected?: string
+  answer?: string
+  onSelect?: (label: string) => void
+}) {
+  // Detect if all options have images → use 2x2 grid layout
+  const hasImages = options.every((o) => o.content.some((b) => b.kind === "image"))
+
+  const getOptionClassName = (label: string) =>
+    cn(
+      "transition-colors",
+      answer === label && "border-emerald-500/30 bg-emerald-500/5 ring-1 ring-emerald-500/20",
+      selected === label && answer !== label && "border-primary/20 bg-primary/5",
+      !selected && !answer && "border-transparent hover:bg-muted/50",
+      selected !== label && answer !== label && "border-transparent hover:bg-muted/50"
+    )
+
+  if (hasImages) {
+    return (
+      <RadioGroup
+        value={selected}
+        onValueChange={onSelect}
+        className="grid grid-cols-2 gap-3"
+      >
+        {options.map((option) => (
+          <Label
+            key={option.label}
+            htmlFor={`${questionId}-option-${option.label}`}
+            className={cn(
+              "flex cursor-pointer flex-col items-center gap-2 rounded-lg border p-3",
+              getOptionClassName(option.label)
+            )}
+          >
+            <div className="flex w-full items-center gap-2">
+              <RadioGroupItem
+                value={option.label}
+                id={`${questionId}-option-${option.label}`}
+                className={cn(
+                  "shrink-0",
+                  answer === option.label && "border-emerald-500 data-checked:border-emerald-500 data-checked:bg-emerald-500"
+                )}
+              />
+              <span className={cn(
+                "font-medium",
+                answer === option.label ? "text-emerald-600" : "text-muted-foreground"
+              )}>
+                {option.label}.
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <ContentBlocks blocks={option.content} />
+            </div>
+          </Label>
+        ))}
+      </RadioGroup>
+    )
+  }
+
+  // Text-only or mixed: vertical list
+  return (
+    <RadioGroup value={selected} onValueChange={onSelect} className="gap-0">
+      {options.map((option) => (
+        <Label
+          key={option.label}
+          htmlFor={`${questionId}-option-${option.label}`}
+          className={cn(
+            "flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2.5",
+            getOptionClassName(option.label)
+          )}
+        >
+          <RadioGroupItem
+            value={option.label}
+            id={`${questionId}-option-${option.label}`}
+            className={cn(
+              "mt-0.5 shrink-0",
+              answer === option.label && "border-emerald-500 data-checked:border-emerald-500 data-checked:bg-emerald-500"
+            )}
+          />
+          <span className={cn(
+            "mr-2 font-medium",
+            answer === option.label ? "text-emerald-600" : "text-muted-foreground"
+          )}>
+            {option.label}.
+          </span>
+          <div className="flex-1">
+            <ContentBlocks blocks={option.content} />
+          </div>
+        </Label>
+      ))}
+    </RadioGroup>
+  )
+}
+
+function Part({ part, index, imageScale }: { part: QuestionPart; index: number; imageScale?: number }) {
+  return (
+    <div className="flex gap-3 pl-2">
+      <span className="mt-0.5 font-medium text-muted-foreground">
+        ({part.label ?? String.fromCharCode(97 + index)})
+      </span>
+      <div className="flex flex-1 flex-col gap-2">
+        {part.stimulus && part.stimulus.length > 0 && (
+          <Stimulus blocks={part.stimulus} imageScale={imageScale} />
+        )}
+        <ContentBlocks blocks={part.content} imageScale={imageScale} />
+        {part.marks != null && (
+          <span className="text-xs text-muted-foreground">
+            {part.marks} {part.marks === 1 ? "mark" : "marks"}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// --- Main component ---
+
+export interface QuestionProps {
+  question: QuestionData
+  className?: string
+  selectedOption?: string
+  onSelectOption?: (label: string) => void
+}
+
+export function Question({
   question,
-  questionIndex = 0,
-  showNav = true,
   className,
-  onOpenPdf = openPdfStub,
-  onBack,
-  backLabel = "Back",
+  selectedOption,
+  onSelectOption,
 }: QuestionProps) {
-  const resolvedMetadata = metadata ?? data?.metadata ?? defaultMetadata
-  const resolvedQuestion =
-    question ?? data?.questions?.[questionIndex] ?? defaultQuestion
-  const questionLabel = getQuestionLabel(resolvedQuestion)
-  const stimulusText = firstText(
-    resolvedQuestion.stimulus,
-    resolvedQuestion.stimulusQuestion,
-    resolvedQuestion.stimulus_question,
-    resolvedQuestion.context
+  const [internalSelected, setInternalSelected] = useState<string | undefined>(
+    question.answer
   )
-  const answerText = firstText(
-    resolvedQuestion.question,
-    resolvedQuestion.questionToAnswer,
-    resolvedQuestion.question_to_answer,
-    resolvedQuestion.prompt,
-    resolvedQuestion.answerText,
-    resolvedQuestion.answer_text,
-    resolvedQuestion.answer
-  )
-  const fallbackText = cleanQuestionText(resolvedQuestion.text)
-  const topText = stimulusText || (!answerText ? fallbackText : "")
-  const bottomText = answerText || (topText ? "" : fallbackText)
-  const stimulusImages = getStimulusImages(resolvedQuestion)
-  const answerPromptImages = getAnswerPromptImages(resolvedQuestion)
-  const paper = cleanQuestionText(resolvedMetadata.paper) || "Unknown paper"
-  const year = cleanQuestionText(resolvedMetadata.year) || "Unknown year"
-  const page = cleanQuestionText(resolvedQuestion.page)
-  const type = getDisplayType(resolvedQuestion.type)
-  const section = getSectionForPage(resolvedMetadata, resolvedQuestion.page)
+  const selected = selectedOption ?? internalSelected
+  const onSelect = onSelectOption ?? setInternalSelected
+
+  const imageScale = question.type === "multiple_choice" ? 1 : 1.5
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {showNav ? <NavBar /> : null}
-      <main
-        className={cn(
-          "mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center justify-center px-4 py-8 sm:px-6",
-          !showNav && "min-h-screen",
-          className
-        )}
-      >
-        <Card className="w-full max-w-3xl shadow-sm">
-          <CardHeader className="border-b">
-            <CardTitle className="flex min-w-0 flex-wrap items-start gap-2">
-              {onBack ? (
-                <Button type="button" variant="ghost" onClick={onBack}>
-                  <ArrowLeft />
-                  {backLabel}
-                </Button>
-              ) : null}
-              <HoverCard openDelay={150} closeDelay={100}>
-                <HoverCardTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() =>
-                      onOpenPdf({
-                        metadata: resolvedMetadata,
-                        question: resolvedQuestion,
-                        page: resolvedQuestion.page,
-                      })
-                    }
-                  >
-                    <FileText />
-                    {questionLabel}
-                  </Button>
-                </HoverCardTrigger>
-                <HoverCardContent>
-                  <div className="space-y-2">
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Paper
-                      </p>
-                      <p className="font-medium">{paper}</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div>
-                        <p className="font-medium text-muted-foreground">
-                          Year
-                        </p>
-                        <p>{year}</p>
-                      </div>
-                      {page ? (
-                        <div>
-                          <p className="font-medium text-muted-foreground">
-                            Page
-                          </p>
-                          <p>{page}</p>
-                        </div>
-                      ) : null}
-                      {section ? (
-                        <div className="col-span-2">
-                          <p className="font-medium text-muted-foreground">
-                            Section
-                          </p>
-                          <p>
-                            {section.name ?? "Unnamed section"}
-                            {section.pages ? ` · pages ${section.pages}` : ""}
-                          </p>
-                        </div>
-                      ) : null}
-                    </div>
-                    {type ? (
-                      <p className="text-xs text-muted-foreground">{type}</p>
-                    ) : null}
-                  </div>
-                </HoverCardContent>
-              </HoverCard>
-            </CardTitle>
-            <CardAction>
-              <div className="rounded-lg border bg-muted/60 px-3 py-2 text-right">
-                <p className="text-xs font-medium text-muted-foreground">
-                  Marks
-                </p>
-                <p className="text-sm font-semibold">
-                  {formatMarks(resolvedQuestion)}
-                </p>
-              </div>
-            </CardAction>
-          </CardHeader>
+    <div
+      className={cn(
+        "flex flex-col gap-4 rounded-xl bg-card p-5 text-card-foreground ring-1 ring-foreground/10",
+        className
+      )}
+    >
+      {/* Header: question number + marks + type badge */}
+      <div className="flex items-center justify-between">
+        <span className="text-base font-medium">
+          Question {question.number}
+        </span>
+        <div className="flex items-center gap-2">
+          {question.topics?.map((topic) => (
+            <Badge key={topic} variant="secondary">
+              {topic}
+            </Badge>
+          ))}
+          <Badge variant="outline">
+            {question.marks} {question.marks === 1 ? "mark" : "marks"}
+          </Badge>
+        </div>
+      </div>
 
-          <CardContent className="space-y-6">
-            {topText ? (
-              <section className="text-base">
-                <LatexText text={topText} />
-              </section>
-            ) : null}
+      {/* Stimulus */}
+      {question.stimulus && question.stimulus.length > 0 && (
+        <Stimulus blocks={question.stimulus} imageScale={imageScale} />
+      )}
 
-            <ImageStrip
-              images={stimulusImages}
-              alt={`${questionLabel} stimulus`}
-              imageClassName="max-h-[18vh]"
-            />
+      {/* Question content */}
+      {question.content && question.content.length > 0 && (
+        <ContentBlocks blocks={question.content} imageScale={imageScale} />
+      )}
 
-            {(bottomText || answerPromptImages.length > 0) ? (
-              <section className="space-y-4 text-base font-medium">
-                {bottomText ? <LatexText text={bottomText} /> : null}
-                <ImageStrip
-                  images={answerPromptImages}
-                  alt={`${questionLabel} answer prompt`}
-                />
-              </section>
-            ) : null}
+      {/* Multiple choice options */}
+      {question.type === "multiple_choice" && question.options && (
+        <MultipleChoiceOptions
+          questionId={question.id}
+          options={question.options}
+          selected={selected}
+          answer={question.answer}
+          onSelect={onSelect}
+        />
+      )}
 
-            {resolvedQuestion.options?.length ? (
-              <ol className="grid grid-cols-2 gap-3">
-                {resolvedQuestion.options.map((option, index) => {
-                  const label = cleanQuestionText(option.label) || String(index + 1)
-                  const optionImages = getImageSources(option.image, option.images)
-
-                  return (
-                    <li
-                      key={`${label}-${index}`}
-                      className="grid gap-3 rounded-lg border bg-background p-3"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="flex size-8 items-center justify-center rounded-md bg-muted text-sm font-semibold">
-                          {label}
-                        </span>
-                        <LatexText text={option.text} className="text-sm" />
-                      </div>
-                      <div className="grid gap-2 self-center">
-                        <ImageStrip
-                          images={optionImages}
-                          alt={`${questionLabel} option ${label}`}
-                          className="justify-items-start"
-                          imageClassName="max-h-[14vh]"
-                        />
-                      </div>
-                    </li>
-                  )
-                })}
-              </ol>
-            ) : null}
-          </CardContent>
-        </Card>
-      </main>
+      {/* Long answer parts */}
+      {question.parts && question.parts.length > 0 && (
+        <div className="flex flex-col gap-4">
+          {question.parts.map((part, i) => (
+            <Part key={part.label ?? i} part={part} index={i} imageScale={imageScale} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

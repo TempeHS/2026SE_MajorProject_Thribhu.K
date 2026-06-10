@@ -9,4 +9,4 @@ dependencies = [
 ]
 
 [tool.uv.workspace]
-members = ["backend", "tppr-paper-utils"]
+members = ["backend"]

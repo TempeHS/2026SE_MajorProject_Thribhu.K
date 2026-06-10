@@ -19,10 +19,10 @@ dependencies = [
     "python-dotenv>=1.2.2",
     "qrcode[pil]>=8.2",
     "sqlmodel>=0.0.38",
-    "tppr-paper-utils",
+    # "tppr-paper-utils",
     "typing>=3.10.0.0",
     "werkzeug>=3.1.8",
 ]
 
-[tool.uv.sources]
-tppr-paper-utils = { workspace = true }
+# [tool.uv.sources]
+# tppr-paper-utils = { workspace = true }

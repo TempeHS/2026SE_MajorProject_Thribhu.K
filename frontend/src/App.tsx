@@ -5,6 +5,8 @@ import Signup from './pages/Signup'
 import { AuthProvider } from './api/auth'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import PaperEditor from './pages/PaperEditor'
+import { PapersViewer } from './pages/PaperEditorViewer'
 
 function App() {
   return (
@@ -15,6 +17,8 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path='/signup' element={<Signup />} />
+        <Route path="/papers/:id" element={<PaperEditor />} />
+        <Route path="/papers" element={<PapersViewer />} />
       </Routes>
       <Toaster />
       </TooltipProvider>

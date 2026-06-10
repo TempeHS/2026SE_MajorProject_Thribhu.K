@@ -267,7 +267,7 @@ export default function Papers() {
               <Card
                 key={paper.id}
                 className="cursor-pointer transition-colors hover:bg-muted/50"
-                onClick={() => navigate(`/questions/${paper.id}`)}
+                onClick={() => navigate(`/papers/${paper.id}`)}
               >
                 <CardHeader>
                   <div className="flex items-start justify-between">

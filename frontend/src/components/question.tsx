@@ -260,9 +260,9 @@ export function Question({
           Question {question.number}
         </span>
         <div className="flex items-center gap-2">
-          {question.topics?.map((topic) => (
-            <Badge key={topic} variant="secondary">
-              {topic}
+          {question.outcomes?.map((code) => (
+            <Badge key={code} variant="secondary">
+              {code}
             </Badge>
           ))}
           <Badge variant="outline">

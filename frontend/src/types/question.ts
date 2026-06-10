@@ -54,7 +54,7 @@ export interface Question {
   parts?: QuestionPart[]
   options?: ChoiceOption[]
   answer?: string
-  topics?: string[]
+  outcomes?: string[]  // outcome codes e.g. ["ME12-1", "ME12-3"]
   syllabus_points?: SyllabusPoint[]
   difficulty?: Difficulty
   created_at: string

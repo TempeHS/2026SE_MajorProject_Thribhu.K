@@ -14,7 +14,7 @@ export interface PaperMeta {
   source?: PaperSource
   school?: string
   course_level?: CourseLevel
-  topics?: string[]
+  outcomes?: string[]  // aggregated outcome codes from all questions
   visibility: "private" | "public"
   question_count: number
   total_marks: number

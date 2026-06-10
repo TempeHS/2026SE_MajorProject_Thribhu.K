@@ -2,6 +2,9 @@
 
 This is the frontend, powered by `React` and `shadcn/ui`.
 
+> [!INFO]
+> All of this is done with AI. I meticulously checked and cleaned out any kinks, but I am not a frontend person...
+
 ## running
 
 You will need the **bun** or **node** javascript runtimes to compile the frontend into a static website.

@@ -92,7 +92,7 @@ interface QuestionForm {
   options: OptionForm[]
   answer: string  // correct answer label for MCQ (e.g. "A")
   parts: PartForm[]
-  topics: string
+  outcomes: string
 }
 
 const emptyOption: OptionForm = { text: "", imageData: "" }
@@ -107,7 +107,7 @@ const defaultForm: QuestionForm = {
   options: [emptyOption, emptyOption, emptyOption],
   answer: "",
   parts: [],
-  topics: "",
+  outcomes: "",
 }
 
 // --- Helpers ---
@@ -427,7 +427,7 @@ export default function PaperEditor() {
             marks: p.marks ?? 0,
           }))
         : [],
-      topics: q.topics?.join(", ") ?? "",
+      outcomes: q.outcomes?.join(", ") ?? "",
     })
     setDialogOpen(true)
   }
@@ -477,7 +477,7 @@ export default function PaperEditor() {
           }))
         : undefined
 
-    const topics = form.topics
+    const outcomes = form.outcomes
       .split(",")
       .map((t) => t.trim())
       .filter(Boolean)
@@ -493,7 +493,7 @@ export default function PaperEditor() {
         options,
         parts,
         answer,
-        topics: topics.length > 0 ? topics : undefined,
+        outcomes: outcomes.length > 0 ? outcomes : undefined,
       })
     } else {
       const now = new Date().toISOString()
@@ -509,7 +509,7 @@ export default function PaperEditor() {
         options,
         parts,
         answer,
-        topics: topics.length > 0 ? topics : undefined,
+        outcomes: outcomes.length > 0 ? outcomes : undefined,
         created_at: now,
         updated_at: now,
       }
@@ -658,7 +658,7 @@ export default function PaperEditor() {
         <main className="mx-auto max-w-4xl px-6 py-8">
           <div className="flex flex-col items-center gap-4 py-16 text-center">
             <p className="text-lg text-muted-foreground">Paper not found.</p>
-            <Button variant="ghost" onClick={() => navigate("/questions")}>
+            <Button variant="ghost" onClick={() => navigate("/papers")}>
               <ArrowLeft className="mr-2 size-4" />
               Back to papers
             </Button>
@@ -678,7 +678,7 @@ export default function PaperEditor() {
             variant="ghost"
             size="sm"
             className="w-fit"
-            onClick={() => navigate("/questions")}
+            onClick={() => navigate("/papers")}
           >
             <ArrowLeft className="mr-2 size-4" />
             Back to papers
@@ -1192,13 +1192,13 @@ export default function PaperEditor() {
                     </div>
                   )}
 
-                  {/* Topics */}
+                  {/* Outcomes */}
                   <div className="flex flex-col gap-2">
-                    <Label>Topics (comma-separated)</Label>
+                    <Label>Outcomes (comma-separated)</Label>
                     <Input
-                      placeholder="e.g. algebra, quadratics"
-                      value={form.topics}
-                      onChange={(e) => updateFormField("topics", e.target.value)}
+                      placeholder="e.g. ME12-1, ME12-3"
+                      value={form.outcomes}
+                      onChange={(e) => updateFormField("outcomes", e.target.value)}
                     />
                   </div>
                 </div>

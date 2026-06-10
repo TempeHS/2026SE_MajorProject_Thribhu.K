@@ -62,14 +62,14 @@ function PaperSettingsForm({
   const [school, setSchool] = useState(paper.school ?? "")
   const [courseLevel, setCourseLevel] = useState<CourseLevel | "">(paper.course_level ?? "")
 
-  const [topics, setTopics] = useState(paper.topics?.join(", ") ?? "")
+  const [outcomes, setOutcomes] = useState(paper.outcomes?.join(", ") ?? "")
   const [visibility, setVisibility] = useState(paper.visibility)
   const [duration, setDuration] = useState<number | "">(paper.duration_minutes ?? "")
 
   function handleSave() {
     if (!title.trim() || !subject.trim()) return
 
-    const topicsList = topics
+    const outcomesList = outcomes
       .split(",")
       .map((t) => t.trim())
       .filter(Boolean)
@@ -82,7 +82,7 @@ function PaperSettingsForm({
       school: school.trim() || undefined,
       course_level: courseLevel || undefined,
 
-      topics: topicsList.length > 0 ? topicsList : undefined,
+      outcomes: outcomesList.length > 0 ? outcomesList : undefined,
       visibility,
       duration_minutes: duration ? Number(duration) : undefined,
     })
@@ -191,12 +191,12 @@ function PaperSettingsForm({
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="settings-topics">Topics (comma-separated)</Label>
+          <Label htmlFor="settings-outcomes">Outcomes (comma-separated)</Label>
           <Input
-            id="settings-topics"
-            placeholder="e.g. mechanics, waves, thermodynamics"
-            value={topics}
-            onChange={(e) => setTopics(e.target.value)}
+            id="settings-outcomes"
+            placeholder="e.g. ME12-1, ME12-3, ME12-7"
+            value={outcomes}
+            onChange={(e) => setOutcomes(e.target.value)}
           />
         </div>
         <div className="grid grid-cols-2 gap-4">

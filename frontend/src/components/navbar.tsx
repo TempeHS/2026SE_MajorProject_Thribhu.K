@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { NotepadTextDashed, Plus, FileText } from "lucide-react"
+import { NotepadTextDashed, Plus, FileText, Search } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -26,15 +26,20 @@ export default function NavBar() {
 
         {/* Right*/}
         <div className="ml-auto flex items-center gap-2">
+          <Button asChild variant="ghost" size="icon" className="size-8">
+            <Link to="/search">
+              <Search className="size-4" />
+            </Link>
+          </Button>
           {user ? (
             <>
               <Button asChild variant="ghost" size="icon" className="size-8">
-                <Link to="/questions">
+                <Link to="/papers">
                   <FileText className="size-4" />
                 </Link>
               </Button>
               <Button asChild variant="outline" size="sm">
-                <Link to="/questions?new=true">
+                <Link to="/papers?new=true">
                   <Plus data-icon="inline-start" />
                   New Paper
                 </Link>

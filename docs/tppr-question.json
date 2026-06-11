@@ -107,6 +107,11 @@
         "marks": {
           "type": "integer",
           "minimum": 0
+        },
+        "is_independent": {
+          "type": "boolean",
+          "description": " True if this part stands alone from the previous part's context."
+          
         }
       },
       "required": ["label", "content"],

@@ -3,24 +3,45 @@ import { useNavigate } from "react-router-dom";
 import NavBar from "@/components/navbar";
 import { PaperCard } from "@/components/paper-card";
 import { getPapers, deletePaper } from "@/api/papers";
+import { paperStore } from "@/lib/paper";
 import { FileQuestion } from "lucide-react";
 import { toast } from "sonner";
 import type { PaperMeta } from "@/types/tppr-paper";
 
+type ListedPaper = PaperMeta & { isLocal?: boolean };
+
 export function PapersViewer() {
-    const [papers, setPapers] = useState<PaperMeta[]>([]);
+    const [papers, setPapers] = useState<ListedPaper[]>([]);
     const navigate = useNavigate();
 
     useEffect(() => {
-        getPapers()
-            .then(setPapers)
-            .catch(() => setPapers([]));
+        async function load() {
+            const [remote, local] = await Promise.all([
+                getPapers().catch(() => [] as PaperMeta[]),
+                paperStore.listPapers().catch(() => []),
+            ]);
+
+            const merged = new Map<string, ListedPaper>();
+            for (const p of remote) merged.set(p.id, p);
+            for (const p of local) merged.set(p.id, { ...p, isLocal: true });
+
+            setPapers(
+                [...merged.values()].sort((a, b) =>
+                    b.updated_at.localeCompare(a.updated_at)
+                ),
+            );
+        }
+        load();
     }, []);
 
-    async function handleDelete(id: string) {
+    async function handleDelete(paper: ListedPaper) {
         try {
-            await deletePaper(id);
-            setPapers((prev) => prev.filter((p) => p.id !== id));
+            if (paper.isLocal) {
+                await paperStore.deletePaper(paper.id);
+            } else {
+                await deletePaper(paper.id);
+            }
+            setPapers((prev) => prev.filter((p) => p.id !== paper.id));
             toast.success("Paper deleted");
         } catch {
             toast.error("Failed to delete paper");
@@ -47,7 +68,7 @@ export function PapersViewer() {
                                 onOpen={() => navigate(`/papers/${paper.id}`)}
                                 onEdit={() =>
                                     navigate(`/papers/${paper.id}?settings=true`)}
-                                onDelete={() => handleDelete(paper.id)}
+                                onDelete={() => handleDelete(paper)}
                             />
                         ))}
                     </div>

@@ -1,24 +1,43 @@
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { getPaper } from "@/api/papers";
-import type { Paper } from "@/types/tppr-paper";
+import { paperStore } from "@/lib/paper";
+import type { Paper, Question } from "@/types/tppr-paper";
 
 export function QuestionSample({ paperId }: { paperId: string }) {
-    const [paper, setPaper] = useState<Paper | null>(null);
+    const [question, setQuestion] = useState<Question | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        getPaper(paperId)
-            .then(setPaper)
-            .catch(() => setPaper(null))
-            .finally(() => setLoading(false));
+        async function load() {
+            try {
+                const paper: Paper | undefined =
+                    (await paperStore.getPaper(paperId).catch(() =>
+                        undefined
+                    )) ??
+                        (await getPaper(paperId).catch(() => undefined));
+
+                const questions = paper?.questions ?? [];
+                setQuestion(
+                    questions.length > 0
+                        ? questions[
+                            Math.floor(Math.random() * questions.length)
+                        ]
+                        : null,
+                );
+            } finally {
+                setLoading(false);
+            }
+        }
+        load();
     }, [paperId]);
 
     if (loading) {
-        return <p className="text-sm text-muted-foreground">Loading preview…</p>;
+        return (
+            <p className="text-sm text-muted-foreground">Loading preview…</p>
+        );  
     }
 
-    const question = paper?.questions?.[0];
     if (!question) {
         return (
             <p className="text-sm text-muted-foreground">
@@ -29,7 +48,7 @@ export function QuestionSample({ paperId }: { paperId: string }) {
 
     const previewText =
         question.content?.find((b) => b.kind === "text")?.text ??
-        "No text preview available";
+            "No text preview available";
 
     return (
         <div className="space-y-2">

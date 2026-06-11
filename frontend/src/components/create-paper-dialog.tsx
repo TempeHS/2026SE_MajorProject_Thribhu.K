@@ -25,8 +25,15 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { AllNESASubjectsList } from "@/lib/subjects";
 import { useState } from "react";
 import { toast } from "sonner";
+import type { CourseLevel, PaperSource, Visibility } from "@/types/tppr-paper";
+import { createLocalPaper } from "@/lib/paper";
+import { useAuth } from "@/api/auth";
+import { useNavigate } from "react-router-dom";
 
 export function CreatePaperDialog({ onCreated }: { onCreated?: () => void }) {
+    const { user } = useAuth();
+    const navigate = useNavigate();
+    
     const [subject, setSubject] = useState("");
     const [courseLevel, setCourseLevel] = useState("");
     const [source, setSource] = useState("");
@@ -37,35 +44,31 @@ export function CreatePaperDialog({ onCreated }: { onCreated?: () => void }) {
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
+        if (!user) {
+            setError("You gotta be logged in to create a paper");
+            return;
+        }
         setError("");
         setSubmitting(true);
 
         const formData = new FormData(e.currentTarget);
-        const payload = {
-            title: formData.get("title"),
-            subject,
-            course_level: showCourseLevel ? courseLevel || null : null,
-            year: formData.get("year") ? Number(formData.get("year")) : null,
-            source: source || null,
-            visibility,
-        };
 
         try {
-            const res = await fetch("/api/papers", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-                credentials: "include",
-            });
-            const data = await res.json();
-            if (!res.ok) {
-                setError(data.message || "Failed to create paper");
-                return;
-            }
+            const paper = await createLocalPaper({
+                title: String(formData.get("title")),
+                subject,
+                course_level: showCourseLevel
+                    ? (courseLevel as CourseLevel) || null
+                    : null,
+                year: formData.get("year") ? Number(formData.get("year")) : null,
+                source: (source as PaperSource) || null,
+                visibility: visibility as Visibility,
+            }, user.user_id);
             toast.success("Paper created");
             onCreated?.();
+            navigate(`/papers/${paper.id}`);
         } catch {
-            setError("An error occurred");
+            setError("Failed to create paper locally");
         } finally {
             setSubmitting(false);
         }

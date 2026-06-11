@@ -66,6 +66,8 @@ export interface QuestionPart {
     stimulus?: ContentBlock[];
     content: ContentBlock[];
     marks?: number;
+    /** True if this part stands alone from the previous part's context. */
+    is_independent?: boolean;
 }
 
 // ---------- Question (tppr-question.json) ----------
@@ -138,6 +140,10 @@ export interface Paper {
     duration_minutes?: number;
     created_at: string;
     updated_at: string;
+    year?: number;
+    source?: PaperSource;
+    course_level?: CourseLevel;
+    school?: string;
     /** Full ordered list of questions in the paper. */
     questions: Question[];
 }

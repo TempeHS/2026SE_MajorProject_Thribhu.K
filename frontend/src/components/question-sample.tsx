@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { getPaper } from "@/api/papers";
 import { paperStore } from "@/lib/paper";
 import type { Paper, Question } from "@/types/tppr-paper";
+import { ContentBlocks } from "./question";
 
 export function QuestionSample({ paperId }: { paperId: string }) {
     const [question, setQuestion] = useState<Question | null>(null);
@@ -35,7 +36,7 @@ export function QuestionSample({ paperId }: { paperId: string }) {
     if (loading) {
         return (
             <p className="text-sm text-muted-foreground">Loading preview…</p>
-        );  
+        );
     }
 
     if (!question) {
@@ -45,10 +46,6 @@ export function QuestionSample({ paperId }: { paperId: string }) {
             </p>
         );
     }
-
-    const previewText =
-        question.content?.find((b) => b.kind === "text")?.text ??
-            "No text preview available";
 
     return (
         <div className="space-y-2">
@@ -63,9 +60,18 @@ export function QuestionSample({ paperId }: { paperId: string }) {
                     <Badge variant="secondary">{question.marks} marks</Badge>
                 </div>
             </div>
-            <p className="line-clamp-5 text-sm text-muted-foreground">
-                {previewText}
-            </p>
+
+            {/* standard rendering of the question */}
+            <div className="line-clamp-[12] space-y-2 text-sm text-muted-foreground">
+                <ContentBlocks blocks={question.stimulus} />
+                <ContentBlocks blocks={question.content} />
+            </div>
+
+            {(!question.stimulus?.length && !question.content?.length) && (
+                <p className="text-sm text-muted-foreground">
+                    No text preview available
+                </p>
+            )}
         </div>
     );
 }

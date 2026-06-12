@@ -8,6 +8,9 @@ import type {
     ContentBlock,
     Question as QuestionData,
 } from "@/types/tppr-paper";
+import { Pencil, Trash2 } from "lucide-react";
+import { Button } from "./ui/button";
+import { MathText } from "./math-text";
 
 /** Resolves asset:// URLs from IndexedDB to object URLs. */
 function useAssetUrl(url: string): string | undefined {
@@ -45,13 +48,13 @@ function AssetImage({
             alt={alt ?? ""}
             width={width}
             height={height}
-            className="max-w-full rounded-md"
+            className="mx-auto block max-w-full rounded-md"
         />
     );
 }
 
 /** Renders an ordered list of text / image / table blocks. */
-function ContentBlocks({ blocks }: { blocks?: ContentBlock[] }) {
+export function ContentBlocks({ blocks }: { blocks?: ContentBlock[] }) {
     if (!blocks?.length) return null;
     return (
         <div className="space-y-2">
@@ -60,7 +63,7 @@ function ContentBlocks({ blocks }: { blocks?: ContentBlock[] }) {
                     case "text":
                         return (
                             <p key={i} className="whitespace-pre-wrap text-sm">
-                                {block.text}
+                                <MathText text={block.text} />
                             </p>
                         );
                     case "image":
@@ -78,8 +81,8 @@ function ContentBlocks({ blocks }: { blocks?: ContentBlock[] }) {
                             <div
                                 key={i}
                                 className="overflow-x-auto text-sm [&_td]:border [&_td]:px-2 [&_td]:py-1 [&_th]:border [&_th]:px-2 [&_th]:py-1"
-                                // html comes from paper authors — sanitize before storing,
-                                // or run through DOMPurify here.
+                                // idk if this is safe, ill get SAST to flag it :shrug:
+                                // specifically needs to purify
                                 dangerouslySetInnerHTML={{ __html: block.html }}
                             />
                         );
@@ -90,10 +93,11 @@ function ContentBlocks({ blocks }: { blocks?: ContentBlock[] }) {
 }
 
 export function Question(
-    { question, onChange, onDelete }: {
+    { question, onChange, onDelete, onEdit }: {
         question: QuestionData;
         onChange?: (q: QuestionData) => void;
         onDelete?: () => void;
+        onEdit?: () => void;
     },
 ) {
     return (
@@ -101,18 +105,34 @@ export function Question(
             <CardHeader className="border-b">
                 <CardTitle className="flex items-center justify-between">
                     <span>Question {question.number}</span>
-                    <span className="flex gap-1">
+                    <span className="flex items-center gap-1">
                         {question.difficulty && (
                             <Badge variant="outline">
                                 {question.difficulty}
                             </Badge>
                         )}
                         <Badge variant="secondary">
-                            <Badge variant="secondary">
-                                {question.marks}{" "}
-                                {question.marks === 1 ? "mark" : "marks"}
-                            </Badge>
+                            {question.marks}{" "}
+                            {question.marks === 1 ? "mark" : "marks"}
                         </Badge>
+                        {onEdit && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={onEdit}
+                            >
+                                <Pencil />
+                            </Button>
+                        )}
+                        {onDelete && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={onDelete}
+                            >
+                                <Trash2 />
+                            </Button>
+                        )}
                     </span>
                 </CardTitle>
             </CardHeader>

@@ -68,6 +68,7 @@ class PaperStore {
         return this.run("papers", "readonly", (s) => s.getAll());
     }
 
+    /** Saves the asset internally inside the paper storage and returns the id */
     saveAsset(paperId: string, file: Blob, id = crypto.randomUUID()): Promise<string> {
         const asset: StoredAsset = { id, paperId, blob: file, mimeType: file.type };
         return this.run("assets", "readwrite", (s) => s.put(asset)).then(() => id);

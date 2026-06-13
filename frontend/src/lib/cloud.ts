@@ -45,7 +45,10 @@ export class SyncService {
     }
 
     async sync(paper: Paper): Promise<void> {
-        await paperStore.savePaper(paper);
+        void paperStore.savePaper(paper).catch((e) => {
+            console.warn(e);
+            this.setStatus("offline");
+        });
         this.pending = paper;
         this.setStatus("pending");
 

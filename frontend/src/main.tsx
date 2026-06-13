@@ -4,6 +4,12 @@ import './index.css'
 import App from './App.tsx'
 import { paperStore } from "@/lib/paper";
 
+declare global {
+    interface Window {
+        exportPaper?: (id: string) => Promise<void>;
+    }
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
@@ -15,7 +21,7 @@ createRoot(document.getElementById('root')!).render(
  * 
  * Use `exportPaper("uuid")` in the console
  */
-(window as any).exportPaper = async (id: string) => {
+window.exportPaper = async (id: string) => {
     const paper = await paperStore.getPaper(id);
     if (!paper) {
         console.error(`Paper "${id}" not found in local store.`);

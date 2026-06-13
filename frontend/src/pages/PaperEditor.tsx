@@ -1,11 +1,15 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
     createQuestion,
     paperStore,
     withRecalculatedTotals,
 } from "@/lib/paper";
-import type { Paper, Question as QuestionData } from "@/types/tppr-paper";
+import type {
+    Paper,
+    PaperMeta,
+    Question as QuestionData,
+} from "@/types/tppr-paper";
 import NavBar from "@/components/navbar";
 import { Question } from "@/components/question";
 import { Button } from "@/components/ui/button";
@@ -15,7 +19,16 @@ import {
     SheetHeader,
     SheetTitle,
 } from "@/components/ui/sheet";
-import { ArrowLeft, Check, CloudOff, CloudUpload, Loader2, Plus, Shell } from "lucide-react";
+import {
+    ArrowLeft,
+    Check,
+    CloudOff,
+    CloudUpload,
+    Download,
+    Loader2,
+    Plus,
+    Shell,
+} from "lucide-react";
 import { QuestionEditor } from "@/components/question-editor";
 import { EditableNumber } from "@/components/editable-number";
 import { toast } from "sonner";
@@ -30,10 +43,17 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useSyncStatus } from "@/lib/hooks";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function PaperEditor() {
     const { id } = useParams<{ id: string }>();
     const [paper, setPaper] = useState<Paper | null>(null);
+    const paperRef = useRef<Paper | null>(null);
     const [loading, setLoading] = useState(true);
 
     const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -46,12 +66,62 @@ export default function PaperEditor() {
 
     const [authorName, setAuthorName] = useState<string | null>(null);
     const isOwner = !!user && String(user.user_id) === paper?.author_id;
+    const authorId = paper?.author_id;
 
     const [remixSource, setRemixSource] = useState<
         { title: string; author: string } | null
     >(null);
 
+    const [showSaveHint, setShowSaveHint] = useState(false);
+    const [showExportDialog, setShowExportDialog] = useState(false);
+    const saveCountRef = useRef(0);
+    const saveTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+    useEffect(() => {
+        function handleKeyDown(e: KeyboardEvent) {
+            if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+                e.preventDefault();
+                saveCountRef.current += 1;
+
+                // Reset counter after 3s of no presses
+                if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+                saveTimerRef.current = setTimeout(() => {
+                    saveCountRef.current = 0;
+                }, 3000);
+
+                if (saveCountRef.current >= 5) {
+                    saveCountRef.current = 0;
+                    setShowSaveHint(false);
+                    setShowExportDialog(true);
+                } else {
+                    setShowSaveHint(true);
+                    setTimeout(() => setShowSaveHint(false), 2500);
+                }
+            }
+        }
+        document.addEventListener("keydown", handleKeyDown);
+        return () => document.removeEventListener("keydown", handleKeyDown);
+    }, []);
+
+    function handleExportJson() {
+        if (!paper) return;
+        const blob = new Blob([JSON.stringify(paper, null, 2)], {
+            type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${paper.title.replace(/[^a-z0-9]/gi, "_")}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        setShowExportDialog(false);
+    }
+
     const syncStatus = useSyncStatus();
+
+    useEffect(() => {
+        paperRef.current = paper;
+    }, [paper]);
 
     useEffect(() => {
         if (!paper?.remixed) return;
@@ -71,12 +141,12 @@ export default function PaperEditor() {
     }, [paper?.remixed]);
 
     useEffect(() => {
-        if (!paper) return;
-        fetch(`/api/whotf?user_id=${paper.author_id}`)
+        if (!authorId) return;
+        fetch(`/api/whotf?user_id=${authorId}`)
             .then((res) => res.ok ? res.json() : Promise.reject())
             .then((data) => setAuthorName(data.username))
             .catch(() => setAuthorName("Unknown"));
-    }, [paper?.author_id]);
+    }, [authorId]);
 
     useEffect(() => {
         if (!id) return;
@@ -127,11 +197,22 @@ export default function PaperEditor() {
         navigate(`/papers/${remixed.id}`);
     }
 
-    async function updatePaper(next: Paper) {
+    const updatePaper = useCallback((
+        nextPaper: Paper | ((current: Paper) => Paper),
+    ) => {
+        const current = paperRef.current;
+        if (!current) return;
+
+        const next = typeof nextPaper === "function"
+            ? nextPaper(current)
+            : nextPaper;
+        if (next === current) return;
+
         const stamped = withRecalculatedTotals(next);
+        paperRef.current = stamped;
         setPaper(stamped);
-        await syncService.sync(stamped);
-    }
+        void syncService.sync(stamped);
+    }, []);
 
     async function handleBack() {
         if (paper && isOwner) {
@@ -147,69 +228,76 @@ export default function PaperEditor() {
         navigate(-1);
     }
 
-    function addQuestion() {
-        if (!paper) return;
-        updatePaper({
-            ...paper,
-            questions: [...paper.questions, createQuestion(paper)],
-        });
-    }
+    const addQuestion = useCallback(() => {
+        updatePaper((current) => ({
+            ...current,
+            questions: [...current.questions, createQuestion(current)],
+        }));
+    }, [updatePaper]);
 
-    function handleQuestionChange(updated: QuestionData) {
-        if (!paper) return;
-        updatePaper({
-            ...paper,
-            questions: paper.questions.map((q) =>
+    const handleQuestionChange = useCallback((updated: QuestionData) => {
+        updatePaper((current) => ({
+            ...current,
+            questions: current.questions.map((q) =>
                 q.id === updated.id ? updated : q
             ),
-        });
-    }
+        }));
+    }, [updatePaper]);
 
-    function handleQuestionDelete(qid: string) {
-        if (!paper) return;
-        updatePaper({
-            ...paper,
-            questions: paper.questions
+    const handleQuestionDelete = useCallback((qid: string) => {
+        updatePaper((current) => ({
+            ...current,
+            questions: current.questions
                 .filter((q) => q.id !== qid)
                 .map((q, i) => ({ ...q, number: i + 1 })),
+        }));
+    }, [updatePaper]);
+
+    const handleDuplicate = useCallback((qid: string) => {
+        updatePaper((current) => {
+            const source = current.questions.find((q) => q.id === qid);
+            if (!source) return current;
+            const idx = current.questions.indexOf(source);
+            const clone: QuestionData = {
+                ...structuredClone(source),
+                id: crypto.randomUUID(),
+            };
+            const questions = [...current.questions];
+            questions.splice(idx + 1, 0, clone);
+            return {
+                ...current,
+                questions: questions.map((q, i) => ({ ...q, number: i + 1 })),
+            };
         });
-    }
+    }, [updatePaper]);
 
-    function handleDuplicate(qid: string) {
-        if (!paper) return;
-        const source = paper.questions.find((q) => q.id === qid);
-        if (!source) return;
-        const idx = paper.questions.indexOf(source);
-        const clone: QuestionData = {
-            ...structuredClone(source),
-            id: crypto.randomUUID(),
-        };
-        const questions = [...paper.questions];
-        questions.splice(idx + 1, 0, clone);
-        updatePaper({
-            ...paper,
-            questions: questions.map((q, i) => ({ ...q, number: i + 1 })),
+    const handleNumberChange = useCallback((qid: string, newNumber: number) => {
+        updatePaper((current) => {
+            const from = current.questions.findIndex((q) => q.id === qid);
+            if (from === -1) return current;
+            const to = Math.min(
+                Math.max(newNumber - 1, 0),
+                current.questions.length - 1,
+            );
+
+            const questions = [...current.questions];
+            const [moved] = questions.splice(from, 1);
+            questions.splice(to, 0, moved);
+
+            return {
+                ...current,
+                questions: questions.map((q, i) => ({ ...q, number: i + 1 })),
+            };
         });
-    }
+    }, [updatePaper]);
 
-    function handleNumberChange(qid: string, newNumber: number) {
-        if (!paper) return;
-        const from = paper.questions.findIndex((q) => q.id === qid);
-        if (from === -1) return;
-        const to = Math.min(
-            Math.max(newNumber - 1, 0),
-            paper.questions.length - 1,
-        );
+    const handleSettingsSave = useCallback((meta: PaperMeta) => {
+        updatePaper((current) => ({ ...current, ...meta }));
+    }, [updatePaper]);
 
-        const questions = [...paper.questions];
-        const [moved] = questions.splice(from, 1);
-        questions.splice(to, 0, moved);
-
-        updatePaper({
-            ...paper,
-            questions: questions.map((q, i) => ({ ...q, number: i + 1 })),
-        });
-    }
+    const handleQuestionEdit = useCallback((qid: string) => {
+        setSelectedId(qid);
+    }, []);
 
     if (loading || authLoading) {
         return (
@@ -275,42 +363,36 @@ export default function PaperEditor() {
                         {isOwner && (
                             <PaperSettings
                                 paper={paper}
-                                onSave={(meta) =>
-                                    updatePaper({ ...paper, ...meta })}
+                                onSave={handleSettingsSave}
                             />
                         )}
 
                         {isOwner && (
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <span className="ml-2">
-                                            {syncStatus === "synced" && (
-                                                <Check className="size-4 text-green-500" />
-                                            )}
-                                            {syncStatus === "syncing" && (
-                                                <Loader2 className="size-4 animate-spin text-blue-500" />
-                                            )}
-                                            {syncStatus === "pending" && (
-                                                <CloudUpload className="size-4 text-yellow-500" />
-                                            )}
-                                            {syncStatus === "offline" && (
-                                                <CloudOff className="size-4 text-destructive" />
-                                            )}
-                                        </span>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        {syncStatus === "synced" &&
-                                            "All changes saved"}
-                                        {syncStatus === "syncing" &&
-                                            "Syncing..."}
-                                        {syncStatus === "pending" &&
-                                            "Changes pending sync"}
-                                        {syncStatus === "offline" &&
-                                            "Offline — changes saved locally"}
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
+                            <Popover
+                                open={showSaveHint}
+                                onOpenChange={setShowSaveHint}
+                            >
+                                <PopoverTrigger asChild>
+                                    <span className="ml-2">
+                                        {syncStatus === "synced" && (
+                                            <Check className="size-4 text-green-500" />
+                                        )}
+                                        {syncStatus === "syncing" && (
+                                            <Loader2 className="size-4 animate-spin text-blue-500" />
+                                        )}
+                                        {syncStatus === "pending" && (
+                                            <CloudUpload className="size-4 text-yellow-500" />
+                                        )}
+                                        {syncStatus === "offline" && (
+                                            <CloudOff className="size-4 text-destructive" />
+                                        )}
+                                    </span>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto px-3 py-2 text-xs">
+                                    Don't worry, everything is automatically
+                                    saved
+                                </PopoverContent>
+                            </Popover>
                         )}
 
                         {/** Remix button */}
@@ -391,17 +473,14 @@ export default function PaperEditor() {
                                 <Question
                                     key={q.id}
                                     question={q}
-                                    onChange={isOwner
-                                        ? handleQuestionChange
-                                        : undefined}
                                     onDelete={isOwner
-                                        ? () => handleQuestionDelete(q.id)
+                                        ? handleQuestionDelete
                                         : undefined}
                                     onEdit={isOwner
-                                        ? () => setSelectedId(q.id)
+                                        ? handleQuestionEdit
                                         : undefined}
                                     onDuplicate={isOwner
-                                        ? () => handleDuplicate(q.id)
+                                        ? handleDuplicate
                                         : undefined}
                                 />
                             ))}
@@ -443,6 +522,28 @@ export default function PaperEditor() {
                     )}
                 </SheetContent>
             </Sheet>
+
+            <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+    <DialogContent>
+        <DialogHeader>
+            <DialogTitle>
+                You really don't trust the cloud, do you? Hmph.
+            </DialogTitle>
+            <DialogDescription>
+                Here, you can save it locally or whatever… its not like I'm
+                doing this because I care.
+            </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+            <Button variant="outline" onClick={() => setShowExportDialog(false)}>
+                Nevermind
+            </Button>
+            <Button onClick={handleExportJson}>
+                <Download className="size-4" /> Export as JSON
+            </Button>
+        </DialogFooter>
+    </DialogContent>
+</Dialog>
         </>
     );
 }

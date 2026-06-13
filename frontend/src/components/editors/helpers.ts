@@ -1,11 +1,6 @@
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { paperStore } from "@/lib/paper";
 import type {
     ChoiceOption,
     ContentBlock,
-    Question,
-    QuestionType,
 } from "@/types/tppr-paper";
 
 export function optionLabel(index: number): string {

@@ -24,10 +24,9 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { AllNESASubjectsList } from "@/lib/subjects";
-import { useState } from "react";
+import { memo, useState } from "react";
 import type {
     CourseLevel,
-    Paper,
     PaperMeta,
     PaperSource,
     Visibility,
@@ -43,7 +42,17 @@ interface PaperSettingsProps {
     onOpenChange?: (open: boolean) => void;
 }
 
-export function PaperSettings(
+function sameSettingsPaper(a: PaperMeta, b: PaperMeta) {
+    return a.id === b.id &&
+        a.title === b.title &&
+        a.subject === b.subject &&
+        a.course_level === b.course_level &&
+        a.year === b.year &&
+        a.source === b.source &&
+        a.visibility === b.visibility;
+}
+
+export const PaperSettings = memo(function PaperSettings(
     { paper, onSave, onOpenChange }: PaperSettingsProps,
 ) {
     const [open, setOpen] = useState(false);
@@ -402,4 +411,8 @@ export function PaperSettings(
             </Dialog>
         </>
     );
-}
+}, (prev, next) =>
+    sameSettingsPaper(prev.paper, next.paper) &&
+    prev.onSave === next.onSave &&
+    prev.onOpenChange === next.onOpenChange
+);

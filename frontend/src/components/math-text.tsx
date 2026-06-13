@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import katex from "katex";
 import "katex/dist/katex.min.css";
 
@@ -32,11 +32,13 @@ function renderSegment(seg: string, i: number) {
     return <span key={i} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
-export function MathText({ text, className }: { text: string; className?: string }) {
-    const parts = useMemo(() => text.split(SPLIT), [text]);
+export const MathText = memo(function MathText(
+    { text, className }: { text: string; className?: string },
+) {
+    const children = useMemo(() => text.split(SPLIT).map(renderSegment), [text]);
     return (
         <span className={className}>
-            {parts.map(renderSegment)}
+            {children}
         </span>
     );
-}
+});

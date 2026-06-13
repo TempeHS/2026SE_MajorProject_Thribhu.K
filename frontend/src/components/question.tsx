@@ -1,5 +1,5 @@
 // frontend/src/components/question.tsx
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState, type ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -16,24 +16,30 @@ import remarkGfm from "remark-gfm";
 
 /** Resolves asset:// URLs from IndexedDB to object URLs. */
 function useAssetUrl(url: string): string | undefined {
-    const [resolved, setResolved] = useState<string>();
+    const [resolvedAsset, setResolvedAsset] = useState<
+        { source: string; objectUrl: string } | undefined
+    >();
+
     useEffect(() => {
-        if (!url.startsWith("asset://")) {
-            setResolved(url);
-            return;
-        }
+        if (!url.startsWith("asset://")) return;
+
         let objectUrl: string | undefined;
+        let cancelled = false;
+
         paperStore.getAsset(url.slice("asset://".length)).then((asset) => {
-            if (asset) {
-                objectUrl = URL.createObjectURL(asset.blob);
-                setResolved(objectUrl);
-            }
+            if (!asset || cancelled) return;
+            objectUrl = URL.createObjectURL(asset.blob);
+            setResolvedAsset({ source: url, objectUrl });
         });
+
         return () => {
+            cancelled = true;
             if (objectUrl) URL.revokeObjectURL(objectUrl);
         };
     }, [url]);
-    return resolved;
+
+    if (!url.startsWith("asset://")) return url;
+    return resolvedAsset?.source === url ? resolvedAsset.objectUrl : undefined;
 }
 
 function AssetImage({
@@ -55,7 +61,9 @@ function AssetImage({
     );
 }
 
-function renderWithMath(children: React.ReactNode): React.ReactNode {
+const remarkPlugins = [remarkGfm];
+
+function renderWithMath(children: ReactNode): ReactNode {
     if (typeof children === "string") {
         return <MathText text={children} />;
     }
@@ -69,8 +77,23 @@ function renderWithMath(children: React.ReactNode): React.ReactNode {
     return children;
 }
 
+const markdownComponents = {
+    p: ({ children }: { children?: ReactNode }) => (
+        <p>{renderWithMath(children)}</p>
+    ),
+    li: ({ children }: { children?: ReactNode }) => (
+        <li>{renderWithMath(children)}</li>
+    ),
+    td: ({ children }: { children?: ReactNode }) => (
+        <td>{renderWithMath(children)}</td>
+    ),
+    th: ({ children }: { children?: ReactNode }) => (
+        <th>{renderWithMath(children)}</th>
+    ),
+};
+
 /** Deals with the rendering stuff */
-export function ContentBlocks(
+export const ContentBlocks = memo(function ContentBlocks(
     { blocks, className }: { blocks?: ContentBlock[]; className?: string },
 ) {
     if (!blocks?.length) return null;
@@ -85,21 +108,8 @@ export function ContentBlocks(
                                 className="prose prose-sm max-w-none dark:prose-invert [&_p]:whitespace-pre-wrap text-inherit"
                             >
                                 <ReactMarkdown
-                                    remarkPlugins={[remarkGfm]}
-                                    components={{
-                                        p: ({ children }) => (
-                                            <p>{renderWithMath(children)}</p>
-                                        ),
-                                        li: ({ children }) => (
-                                            <li>{renderWithMath(children)}</li>
-                                        ),
-                                        td: ({ children }) => (
-                                            <td>{renderWithMath(children)}</td>
-                                        ),
-                                        th: ({ children }) => (
-                                            <th>{renderWithMath(children)}</th>
-                                        ),
-                                    }}
+                                    remarkPlugins={remarkPlugins}
+                                    components={markdownComponents}
                                 >
                                     {block.text}
                                 </ReactMarkdown>
@@ -119,15 +129,14 @@ export function ContentBlocks(
             })}
         </div>
     );
-}
+});
 
-export function Question(
-    { question, onChange, onDelete, onEdit, onDuplicate }: {
+export const Question = memo(function Question(
+    { question, onDelete, onEdit, onDuplicate }: {
         question: QuestionData;
-        onChange?: (q: QuestionData) => void;
-        onDelete?: () => void;
-        onEdit?: () => void;
-        onDuplicate?: () => void;
+        onDelete?: (id: string) => void;
+        onEdit?: (id: string) => void;
+        onDuplicate?: (id: string) => void;
     },
 ) {
     return (
@@ -149,7 +158,7 @@ export function Question(
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={onEdit}
+                                onClick={() => onEdit(question.id)}
                             >
                                 <Pencil />
                             </Button>
@@ -158,7 +167,7 @@ export function Question(
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={onDuplicate}
+                                onClick={() => onDuplicate(question.id)}
                             >
                                 <Copy />
                             </Button>
@@ -167,7 +176,7 @@ export function Question(
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={onDelete}
+                                onClick={() => onDelete(question.id)}
                             >
                                 <Trash2 />
                             </Button>
@@ -233,4 +242,4 @@ export function Question(
             </CardContent>
         </Card>
     );
-}
+});

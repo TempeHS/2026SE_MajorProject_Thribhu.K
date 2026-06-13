@@ -11,6 +11,7 @@
     "preview": "npm run preview --workspace tppr-frontend"
   },
   "dependencies": {
+    "@tailwindcss/typography": "^0.5.20",
     "katex": "^0.17.0"
   }
 }

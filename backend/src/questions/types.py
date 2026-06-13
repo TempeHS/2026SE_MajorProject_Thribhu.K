@@ -62,7 +62,7 @@ class SyllabusPoint(StrictBaseModel):
 
 class TextBlock(StrictBaseModel):
     kind: Literal["text"]
-    text: str = PydanticField(min_length=1)
+    text: str
 
 
 class ImageBlock(StrictBaseModel):
@@ -178,8 +178,13 @@ class PaperDB(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     # Relationships
-    questions: list["QuestionDB"] = Relationship(back_populates="paper")
-    outcomes: list["PaperOutcome"] = Relationship()
+    questions: list["QuestionDB"] = Relationship(
+        back_populates="paper",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
+    outcomes: list["PaperOutcome"] = Relationship(
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
 
     # --- JSON helpers ---
 
@@ -410,6 +415,8 @@ def _parse_content_blocks(raw_json: str) -> list[Any]:
     data = json.loads(raw_json)
     blocks: list[Any] = []
     for item in data:
+        if item.get("kind") == "text" and not item.get("text"):
+            continue  # skip empty text blocks
         kind = item.get("kind")
         if kind == "text":
             blocks.append(TextBlock.model_validate(item))

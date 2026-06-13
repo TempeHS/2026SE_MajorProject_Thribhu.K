@@ -21,6 +21,43 @@ createRoot(document.getElementById('root')!).render(
         console.error(`Paper "${id}" not found in local store.`);
         return;
     }
+
+    // resolve asset:// to base64
+    async function blobToDataUrl(blob: Blob): Promise<string> {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    for (const q of paper.questions) {
+        const blockArrays = [q.stimulus, q.content, ...(q.parts?.map(p => p.content) ?? []), ...(q.parts?.map(p => p.stimulus).filter(Boolean) ?? [])];
+        for (const blocks of blockArrays) {
+            if (!blocks) continue;
+            for (const block of blocks) {
+                if (block.kind === "image" && block.url.startsWith("asset://")) {
+                    const asset = await paperStore.getAsset(block.url.slice(8));
+                    if (asset) {
+                        block.url = await blobToDataUrl(asset.blob);
+                    }
+                }
+            }
+        }
+        if (q.options) {
+            for (const opt of q.options) {
+                for (const block of opt.content) {
+                    if (block.kind === "image" && block.url.startsWith("asset://")) {
+                        const asset = await paperStore.getAsset(block.url.slice(8));
+                        if (asset) {
+                            block.url = await blobToDataUrl(asset.blob);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     const json = JSON.stringify(paper, null, 2);
     const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);

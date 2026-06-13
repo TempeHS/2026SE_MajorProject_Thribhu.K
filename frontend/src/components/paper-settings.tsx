@@ -35,6 +35,7 @@ import type {
 import { Settings } from "lucide-react";
 import { toast } from "sonner";
 import { syncService } from "@/lib/cloud";
+import { Link } from "react-router-dom";
 
 interface PaperSettingsProps {
     paper: PaperMeta;
@@ -331,11 +332,18 @@ export function PaperSettings(
                             Repository will be able to see your paper.
                         </li>
                         <li>
-                            Your paper will appear in search results and the
-                            shared question pool.
+                            Your paper can be copied and remixed by anyone.
                         </li>
                         <li>
-                            Your paper can be copied and remixed by anyone. 
+                            Your paper aligns with the{" "}
+                            <Link
+                                to="/legal/copyright"
+                                className="underline text-primary"
+                            >
+                                COPYRIGHT.md
+                            </Link>{" "}
+                            document, and you are aware that you may risk
+                            deletion if in violation.
                         </li>
                     </ul>
                     <p className="text-sm font-medium">Continue?</p>

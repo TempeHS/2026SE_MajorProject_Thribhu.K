@@ -193,16 +193,21 @@ def update_paper(paper_id):
         paper.updated_at = datetime.now(UTC)
 
         if "questions" in data:
-            for old_q in paper.questions:
-                session.delete(old_q)
+            paper.questions.clear()
             session.flush()
 
+            new_questions = []
             for q_data in data["questions"]:
                 q = _build_question_db(q_data, paper_id, str(user_id))
-                session.add(q)
+                new_questions.append(q)
+            paper.questions = new_questions
 
             paper.question_count = len(data["questions"])
             paper.total_marks = sum(q.get("marks", 0) for q in data["questions"])
+
+        session.commit()
+        session.refresh(paper)
+        return jsonify(paper_db_to_read(paper).model_dump(mode="json")), 200
 
         session.add(paper)
         session.commit()

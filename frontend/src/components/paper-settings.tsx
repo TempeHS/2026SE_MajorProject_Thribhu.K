@@ -34,7 +34,7 @@ import type {
 } from "@/types/tppr-paper";
 import { Settings } from "lucide-react";
 import { toast } from "sonner";
-import { publishPaper, unpublishPaper } from "@/lib/cloud";
+import { syncService } from "@/lib/cloud";
 
 interface PaperSettingsProps {
     paper: PaperMeta;
@@ -107,10 +107,10 @@ export function PaperSettings(
 
         try {
             if (isPublishing) {
-                await publishPaper(paper.id);
+                await syncService.publish(paper.id);
                 toast.success(`${title} is now public!`);
             } else if (isUnpublishing) {
-                await unpublishPaper(paper.id);
+                await syncService.unpublish(paper.id);
                 toast.success(`${title} is now private.`);
             }
         } catch {

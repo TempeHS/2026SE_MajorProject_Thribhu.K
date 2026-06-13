@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import type { Paper, PaperMeta } from "@/types/tppr-paper";
 import { Spinner } from "@/components/ui/spinner";
 import { useAuth } from "@/api/auth";
-import { syncPaper } from "@/lib/cloud";
+import { syncService } from "@/lib/cloud";
 
 type ListedPaper = PaperMeta & { isLocal?: boolean };
 
@@ -128,7 +128,7 @@ export function PapersViewer() {
                     paper_id: imported.id,
                 }));
 
-                await syncPaper(imported);
+                await syncService.sync(imported);
 
                 setPapers((prev) => [
                     { ...imported, isLocal: true },

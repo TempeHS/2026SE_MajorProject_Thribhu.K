@@ -19,10 +19,10 @@ import { ArrowLeft, Plus } from "lucide-react";
 import { QuestionEditor } from "@/components/question-editor";
 import { EditableNumber } from "@/components/editable-number";
 import { toast } from "sonner";
-import { flushSync, syncPaper } from "@/lib/cloud";
 import { useAuth } from "@/api/auth";
 import Unauthorized from "./Unauthorised";
 import { PaperSettings } from "@/components/paper-settings";
+import { syncService } from "@/lib/cloud";
 
 export default function PaperEditor() {
     const { id } = useParams<{ id: string }>();
@@ -84,14 +84,14 @@ export default function PaperEditor() {
     async function updatePaper(next: Paper) {
         const stamped = withRecalculatedTotals(next);
         setPaper(stamped);
-        await syncPaper(stamped);
+        await syncService.sync(stamped);
     }
 
     async function handleBack() {
         if (paper && isOwner) {
             setSyncing(true);
             try {
-                await flushSync();
+                await syncService.flush();
             } catch {
                 toast.error("Sync failed — changes are saved locally.");
             } finally {

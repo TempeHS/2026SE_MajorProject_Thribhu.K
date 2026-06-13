@@ -8,10 +8,8 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import type { Question, QuestionType } from "@/types/tppr-paper";
-import { defaultOptions, firstText, withFirstText } from "./editors/helpers";
-import { Textarea } from "./ui/textarea";
+import { defaultOptions } from "./editors/helpers";
 import { MultipleChoiceEditor } from "./editors/multiple-choice";
-import { paperStore } from "@/lib/paper";
 import { StimulusSection } from "./editors/stimulus";
 import { LongAnswerEditor } from "./editors/long-answer";
 import { ShortAnswerEditor } from "./editors/short-answer";

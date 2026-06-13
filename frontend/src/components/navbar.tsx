@@ -27,8 +27,17 @@ import {
   SelectValue,
 } from "./ui/select";
 import { AllNESASubjectsList } from "@/lib/subjects";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useOnline } from "@/lib/hooks";
 
 export default function NavBar() {
+  const online = useOnline();
+
   const { user, logout } = useAuth();
   const [newPaperOpen, setNewPaperOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -40,7 +49,7 @@ export default function NavBar() {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  function handleSearch(e: React.FormEvent) {
+  function handleSearch(e: React.SubmitEvent) {
     e.preventDefault();
     const params = new URLSearchParams();
     if (query) params.set("q", query);
@@ -55,11 +64,22 @@ export default function NavBar() {
     inputRef.current?.blur();
   }
 
+  <Tooltip>
+    <TooltipTrigger>
+      <span className="relative flex size-2">
+        <span className="absolute inline-flex size-full animate-ping rounded-full bg-orange-400 opacity-75" />
+        <span className="inline-flex size-2 rounded-full bg-orange-500" />
+      </span>
+    </TooltipTrigger>
+    <TooltipContent>You're offline — changes saved locally</TooltipContent>
+  </Tooltip>;
+
   return (
     <header className="w-full border-b">
       <div className="mx-auto flex h-16 w-full items-center px-6">
         {/* Brand — takes up left space */}
-<Link to="/" className="flex flex-1 shrink-0 items-center gap-2">          <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
+        <Link to="/" className="flex flex-1 shrink-0 items-center gap-2">
+          <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <NotepadTextDashed className="size-4" />
           </div>
           <span className="hidden text-lg font-semibold sm:inline">
@@ -104,7 +124,8 @@ export default function NavBar() {
         </form>
 
         {/* Right */}
-<div className="flex flex-1 shrink-0 items-center justify-end gap-2">          {user
+        <div className="flex flex-1 shrink-0 items-center justify-end gap-2">
+          {user
             ? (
               <>
                 <Button asChild variant="ghost" size="icon" className="size-8">
@@ -124,19 +145,36 @@ export default function NavBar() {
                 </Dialog>
 
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="relative size-8 rounded-full"
-                    >
-                      <Avatar className="size-8">
-                        <AvatarImage src="force_to_not_work" />
-                        <AvatarFallback>
-                          {user.username?.slice(0, 2).toUpperCase() ?? "U"}
-                        </AvatarFallback>
-                      </Avatar>
-                    </Button>
-                  </DropdownMenuTrigger>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="relative size-8 rounded-full"
+                          >
+                            <Avatar className="size-8">
+                              <AvatarImage src="force_to_not_work" />
+                              <AvatarFallback>
+                                {user.username?.slice(0, 2).toUpperCase() ??
+                                  "U"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span
+                              className={`absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-background ${
+                                online ? "bg-green-500" : "bg-yellow-500"
+                              }`}
+                            />
+                          </Button>
+                        </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        {online
+                          ? "Online — syncing to cloud"
+                          : "Offline — changes saved locally"}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={logout}>
                       Sign out
@@ -162,9 +200,9 @@ export default function NavBar() {
       {focused && showFilters && (
         <div className="border-t bg-muted/50 px-6 py-3">
           <form
-  onSubmit={handleSearch}
-  className="mx-auto flex max-w-2xl items-center justify-center gap-3"
->
+            onSubmit={handleSearch}
+            className="mx-auto flex max-w-2xl items-center justify-center gap-3"
+          >
             <Select value={subject} onValueChange={setSubject}>
               <SelectTrigger className="w-44" onFocus={() => setFocused(true)}>
                 <SelectValue placeholder="Subject" />

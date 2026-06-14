@@ -73,7 +73,7 @@ export function answerSummary(answer: AnswerValue): string {
 }
 
 export function answerContentText(answer: AnswerValue): string {
-    return typeof answer === "object" ? firstText(answer.content) : "";
+    return typeof answer === "object" && answer != null ? firstText(answer.content) : "";
 }
 
 export function withAnswerOptionLabel(

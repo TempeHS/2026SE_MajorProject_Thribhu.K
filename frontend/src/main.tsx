@@ -1,8 +1,9 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import "./index.css";
+import App from "./App.tsx";
 import { paperStore } from "@/lib/paper";
+import { ThemeProvider } from "./lib/theme.tsx";
 
 declare global {
     interface Window {
@@ -10,15 +11,17 @@ declare global {
     }
 }
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
+createRoot(document.getElementById("root")!).render(
+    <ThemeProvider>
+        <StrictMode>
+            <App />
+        </StrictMode>,
+    </ThemeProvider>,
 );
 
 /**
  * Allows for exporting a published paper.
- * 
+ *
  * Use `exportPaper("uuid")` in the console
  */
 window.exportPaper = async (id: string) => {
@@ -38,11 +41,18 @@ window.exportPaper = async (id: string) => {
     }
 
     for (const q of paper.questions) {
-        const blockArrays = [q.stimulus, q.content, ...(q.parts?.map(p => p.content) ?? []), ...(q.parts?.map(p => p.stimulus).filter(Boolean) ?? [])];
+        const blockArrays = [
+            q.stimulus,
+            q.content,
+            ...(q.parts?.map((p) => p.content) ?? []),
+            ...(q.parts?.map((p) => p.stimulus).filter(Boolean) ?? []),
+        ];
         for (const blocks of blockArrays) {
             if (!blocks) continue;
             for (const block of blocks) {
-                if (block.kind === "image" && block.url.startsWith("asset://")) {
+                if (
+                    block.kind === "image" && block.url.startsWith("asset://")
+                ) {
                     const asset = await paperStore.getAsset(block.url.slice(8));
                     if (asset) {
                         block.url = await blobToDataUrl(asset.blob);
@@ -53,8 +63,13 @@ window.exportPaper = async (id: string) => {
         if (q.options) {
             for (const opt of q.options) {
                 for (const block of opt.content) {
-                    if (block.kind === "image" && block.url.startsWith("asset://")) {
-                        const asset = await paperStore.getAsset(block.url.slice(8));
+                    if (
+                        block.kind === "image" &&
+                        block.url.startsWith("asset://")
+                    ) {
+                        const asset = await paperStore.getAsset(
+                            block.url.slice(8),
+                        );
                         if (asset) {
                             block.url = await blobToDataUrl(asset.blob);
                         }
@@ -72,5 +87,7 @@ window.exportPaper = async (id: string) => {
     a.download = `${paper.title.replace(/[^a-z0-9]/gi, "_")}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    console.log(`Exported "${paper.title}" (${paper.questions.length} questions)`);
+    console.log(
+        `Exported "${paper.title}" (${paper.questions.length} questions)`,
+    );
 };

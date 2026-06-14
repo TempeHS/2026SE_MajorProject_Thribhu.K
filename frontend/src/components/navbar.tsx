@@ -38,6 +38,8 @@ import {
 } from "@/components/ui/tooltip";
 import { useOnline } from "@/lib/hooks";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import Confetti from "react-confetti";
+import { useWindowSize } from "react-use";
 
 export default function NavBar() {
   const online = useOnline();
@@ -57,6 +59,9 @@ export default function NavBar() {
   const location = useLocation();
   const isSearchPage = location.pathname === "/search";
 
+  const [showConfetti, setShowConfetti] = useState(false);
+  const { width, height } = useWindowSize();
+
   useEffect(() => {
     if (!localStorage.getItem("hasSeenSearchGuide")) {
       setShowSearchGuide(true);
@@ -65,8 +70,15 @@ export default function NavBar() {
 
   function dismissGuide() {
     localStorage.setItem("hasSeenSearchGuide", "true");
-    setShowSearchGuide(false);
+    setShowSearchGuide((prev) => {
+      if (prev) setShowConfetti(true);
+      return false;
+    });
   }
+
+  useEffect(() => {
+    setShowConfetti(false);
+  }, [location.key]);
 
   function handleSearch(e: React.SubmitEvent) {
     e.preventDefault();
@@ -90,11 +102,37 @@ export default function NavBar() {
         <span className="inline-flex size-2 rounded-full bg-orange-500" />
       </span>
     </TooltipTrigger>
-    <TooltipContent>You're offline — changes saved locally</TooltipContent>
+    <TooltipContent>You're offline - changes saved locally</TooltipContent>
   </Tooltip>;
 
   return (
     <header className="w-full border-b">
+      {showConfetti && (
+        <>
+          {/* Left cannon */}
+          <Confetti
+            width={width}
+            height={height}
+            recycle={false}
+            numberOfPieces={100}
+            confettiSource={{ x: 0, y: height, w: 10, h: 0 }}
+            initialVelocityX={{ min: 5, max: 15 }}
+            initialVelocityY={{ min: -35, max: -15 }}
+            onConfettiComplete={() => setShowConfetti(false)}
+          />
+          {/* Right cannon */}
+          <Confetti
+            width={width}
+            height={height}
+            recycle={false}
+            numberOfPieces={100}
+            confettiSource={{ x: width - 10, y: height, w: 10, h: 0 }}
+            initialVelocityX={{ min: -15, max: -5 }}
+            initialVelocityY={{ min: -35, max: -15 }}
+          />
+        </>
+      )}
+
       <div className="mx-auto flex h-16 w-full items-center px-6">
         {/* Brand — takes up left space */}
         <Link to="/" className="flex flex-1 shrink-0 items-center gap-2">

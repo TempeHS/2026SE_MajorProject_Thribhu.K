@@ -72,15 +72,15 @@ jobs:
           mkdir -p "$site_dir"
 
           if [ "${GITHUB_REF_NAME}" = "main" ]; then
-            VITE_BASE_PATH="/${repo}/" bun run build
+            (cd frontend && VITE_BASE_PATH="/${repo}/" bun run build)
             cp -R frontend/dist/. "$site_dir/"
           else
             has_preview="true"
 
-            (cd main-source && VITE_BASE_PATH="/${repo}/" bun run build)
+            (cd main-source/frontend && VITE_BASE_PATH="/${repo}/" bun run build)
             cp -R main-source/frontend/dist/. "$site_dir/"
 
-            VITE_BASE_PATH="/${repo}/${short_sha}/" bun run build
+            (cd frontend && VITE_BASE_PATH="/${repo}/${short_sha}/" bun run build)
             mkdir -p "$site_dir/${short_sha}"
             cp -R frontend/dist/. "$site_dir/${short_sha}/"
           fi

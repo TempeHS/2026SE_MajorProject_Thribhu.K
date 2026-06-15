@@ -4,12 +4,15 @@ import "./index.css";
 import App from "./App.tsx";
 import { paperStore } from "@/lib/paper";
 import { ThemeProvider } from "./lib/theme.tsx";
+import { installBackendUrlFetch } from "@/lib/api-url";
 
 declare global {
     interface Window {
         exportPaper?: (id: string) => Promise<void>;
     }
 }
+
+installBackendUrlFetch();
 
 createRoot(document.getElementById("root")!).render(
     <ThemeProvider>

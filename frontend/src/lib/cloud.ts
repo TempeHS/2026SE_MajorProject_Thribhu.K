@@ -1,74 +1,168 @@
 import type { Paper } from "@/types/tppr-paper";
 import { paperStore } from "./paper";
 
-let syncTimeout: ReturnType<typeof setTimeout> | null = null;
-let pendingPaper: Paper | null = null;
+export type SyncStatus = "synced" | "syncing" | "pending" | "offline";
 
-async function pushToServer(paper: Paper): Promise<void> {
-    const res = await fetch(`/api/papers/${paper.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(paper),
-    });
+function collectAssetIds(value: unknown, ids = new Set<string>()): Set<string> {
+    if (!value || typeof value !== "object") return ids;
 
-    if (res.status === 404) {
-        const createRes = await fetch("/api/papers", {
+    if (Array.isArray(value)) {
+        for (const item of value) collectAssetIds(item, ids);
+        return ids;
+    }
+
+    const record = value as Record<string, unknown>;
+    if (
+        record.kind === "image" &&
+        typeof record.url === "string" &&
+        record.url.startsWith("asset://")
+    ) {
+        ids.add(record.url.slice("asset://".length));
+    }
+
+    for (const child of Object.values(record)) {
+        collectAssetIds(child, ids);
+    }
+
+    return ids;
+}
+
+export class SyncService {
+    private timeout: ReturnType<typeof setTimeout> | null = null;
+    private pending: Paper | null = null;
+    private status: SyncStatus = "synced";
+    private listeners = new Set<(s: SyncStatus) => void>();
+
+    getStatus() { return this.status; }
+
+    subscribe(fn: (s: SyncStatus) => void) {
+        this.listeners.add(fn);
+        return () => { this.listeners.delete(fn); };
+    }
+
+    private setStatus(s: SyncStatus) {
+        if (s === this.status) return;
+        this.status = s;
+        this.listeners.forEach((fn) => fn(s));
+    }
+
+    private async saveServerPaper(res: Response): Promise<void> {
+        const saved = await res.json() as Paper;
+        await paperStore.savePaper(saved);
+    }
+
+    private async uploadAssets(paper: Paper): Promise<void> {
+        const assetIds = collectAssetIds(paper);
+        for (const assetId of assetIds) {
+            const asset = await paperStore.getAsset(assetId).catch(() => undefined);
+            if (!asset) continue;
+
+            const formData = new FormData();
+            formData.set("asset_id", asset.id);
+            formData.set(
+                "file",
+                new File([asset.blob], asset.id, {
+                    type: asset.mimeType || asset.blob.type || "application/octet-stream",
+                }),
+            );
+
+            const res = await fetch(`/api/papers/${paper.id}/assets`, {
+                method: "POST",
+                credentials: "include",
+                body: formData,
+            });
+            if (!res.ok) throw new Error(`Asset upload failed: ${res.status}`);
+        }
+    }
+
+    private async pushToServer(paper: Paper): Promise<void> {
+        this.setStatus("syncing");
+        const res = await fetch(`/api/papers/${paper.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(paper),
+        });
+
+        if (res.status === 404) {
+            const createRes = await fetch("/api/papers", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify(paper),
+            });
+            if (!createRes.ok) throw new Error(`Create failed: ${createRes.status}`);
+            await this.saveServerPaper(createRes);
+        } else if (!res.ok) {
+            throw new Error(`Sync failed: ${res.status}`);
+        } else {
+            await this.saveServerPaper(res);
+        }
+        await this.uploadAssets(paper);
+        this.setStatus("synced");
+    }
+
+    async sync(paper: Paper): Promise<void> {
+        void paperStore.savePaper(paper).catch((e) => {
+            console.warn(e);
+            this.setStatus("offline");
+        });
+        this.pending = paper;
+        this.setStatus("pending");
+
+        if (this.timeout) clearTimeout(this.timeout);
+        this.timeout = setTimeout(async () => {
+            if (!this.pending) return;
+            try {
+                await this.pushToServer(this.pending);
+            } catch (e) {
+                console.warn(e);
+                this.setStatus("offline");
+            }
+            this.pending = null;
+        }, 1500);
+    }
+
+    async flush(): Promise<void> {
+        if (this.timeout) {
+            clearTimeout(this.timeout);
+            this.timeout = null;
+        }
+        if (this.pending) {
+            try {
+                await this.pushToServer(this.pending);
+            } catch (e) {
+                this.setStatus("offline");
+                throw e;
+            }
+            this.pending = null;
+        }
+    }
+
+    async publish(paperId: string): Promise<void> {
+        const paper = await paperStore.getPaper(paperId);
+        if (!paper) throw new Error("Paper not found locally");
+        this.setStatus("syncing");
+        const res = await fetch(`/api/papers/${paperId}/publish`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
             body: JSON.stringify(paper),
         });
-        if (!createRes.ok) throw new Error(`Create failed: ${createRes.status}`);
-    } else if (!res.ok) {
-        throw new Error(`Sync failed: ${res.status}`);
+        if (!res.ok) throw new Error(`Publish failed: ${res.status}`);
+        await this.uploadAssets(paper);
+        this.setStatus("synced");
+    }
+
+    async unpublish(paperId: string): Promise<void> {
+        this.setStatus("syncing");
+        const res = await fetch(`/api/papers/${paperId}/publish`, {
+            method: "DELETE",
+            credentials: "include",
+        });
+        if (!res.ok) throw new Error(`Unpublish failed: ${res.status}`);
+        this.setStatus("synced");
     }
 }
 
-export async function syncPaper(paper: Paper): Promise<void> {
-    await paperStore.savePaper(paper);
-    pendingPaper = paper;
-
-    if (syncTimeout) clearTimeout(syncTimeout);
-    syncTimeout = setTimeout(async () => {
-        if (!pendingPaper) return;
-        try {
-            await pushToServer(pendingPaper);
-        } catch (e) {
-            console.warn(e);
-        }
-        pendingPaper = null;
-    }, 1500); // debounce of 1500ms
-}
-
-export async function flushSync(): Promise<void> {
-    if (syncTimeout) {
-        clearTimeout(syncTimeout);
-        syncTimeout = null;
-    }
-    if (pendingPaper) {
-        await pushToServer(pendingPaper);
-        pendingPaper = null;
-    }
-}
-
-export async function publishPaper(paperId: string): Promise<void> {
-    const paper = await paperStore.getPaper(paperId);
-    if (!paper) throw new Error("Paper not found locally");
-
-    const res = await fetch(`/api/papers/${paperId}/publish`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(paper),
-    });
-    if (!res.ok) throw new Error(`Publish failed: ${res.status}`);
-}
-
-export async function unpublishPaper(paperId: string): Promise<void> {
-    const res = await fetch(`/api/papers/${paperId}/publish`, {
-        method: "DELETE",
-        credentials: "include",
-    });
-    if (!res.ok) throw new Error(`Unpublish failed: ${res.status}`);
-}
+export const syncService = new SyncService();

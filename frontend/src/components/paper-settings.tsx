@@ -24,17 +24,17 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { AllNESASubjectsList } from "@/lib/subjects";
-import { useState } from "react";
+import { memo, useState } from "react";
 import type {
     CourseLevel,
-    Paper,
     PaperMeta,
     PaperSource,
     Visibility,
 } from "@/types/tppr-paper";
 import { Settings } from "lucide-react";
 import { toast } from "sonner";
-import { publishPaper, unpublishPaper } from "@/lib/cloud";
+import { syncService } from "@/lib/cloud";
+import { Link } from "react-router-dom";
 
 interface PaperSettingsProps {
     paper: PaperMeta;
@@ -42,7 +42,17 @@ interface PaperSettingsProps {
     onOpenChange?: (open: boolean) => void;
 }
 
-export function PaperSettings(
+function sameSettingsPaper(a: PaperMeta, b: PaperMeta) {
+    return a.id === b.id &&
+        a.title === b.title &&
+        a.subject === b.subject &&
+        a.course_level === b.course_level &&
+        a.year === b.year &&
+        a.source === b.source &&
+        a.visibility === b.visibility;
+}
+
+export const PaperSettings = memo(function PaperSettings(
     { paper, onSave, onOpenChange }: PaperSettingsProps,
 ) {
     const [open, setOpen] = useState(false);
@@ -54,6 +64,9 @@ export function PaperSettings(
     const [visibility, setVisibility] = useState<Visibility>(paper.visibility);
     const [showPublishWarning, setShowPublishWarning] = useState(false);
     const [showUnpublishWarning, setShowUnpublishWarning] = useState(false);
+    const [duration, setDuration] = useState(
+        paper.duration_minutes?.toString() ?? "",
+    );
 
     const showCourseLevel = subject === "Mathematics" || subject === "English";
 
@@ -65,6 +78,7 @@ export function PaperSettings(
             setYear(paper.year?.toString() ?? "");
             setSource(paper.source ?? "");
             setVisibility(paper.visibility);
+            setDuration(paper.duration_minutes?.toString() ?? "");
         }
         setShowPublishWarning(false);
         setShowUnpublishWarning(false);
@@ -102,15 +116,16 @@ export function PaperSettings(
             year: year ? Number(year) : undefined,
             source: (source as PaperSource) || undefined,
             visibility,
+            duration_minutes: duration ? Number(duration) : undefined,
             updated_at: new Date().toISOString(),
         };
 
         try {
             if (isPublishing) {
-                await publishPaper(paper.id);
+                await syncService.publish(paper.id);
                 toast.success(`${title} is now public!`);
             } else if (isUnpublishing) {
-                await unpublishPaper(paper.id);
+                await syncService.unpublish(paper.id);
                 toast.success(`${title} is now private.`);
             }
         } catch {
@@ -214,7 +229,7 @@ export function PaperSettings(
                                 )}
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-3 gap-4">
                                 <Field>
                                     <FieldLabel htmlFor="settings-year">
                                         Year
@@ -227,6 +242,21 @@ export function PaperSettings(
                                         onChange={(e) =>
                                             setYear(e.target.value)}
                                         placeholder="2026"
+                                    />
+                                </Field>
+                                <Field>
+                                    <FieldLabel htmlFor="settings-duration">
+                                        Duration (min)
+                                    </FieldLabel>
+                                    <Input
+                                        id="settings-duration"
+                                        type="number"
+                                        min={1}
+                                        max={600}
+                                        value={duration}
+                                        onChange={(e) =>
+                                            setDuration(e.target.value)}
+                                        placeholder="180"
                                     />
                                 </Field>
                                 <Field>
@@ -331,8 +361,18 @@ export function PaperSettings(
                             Repository will be able to see your paper.
                         </li>
                         <li>
-                            Your paper will appear in search results and the
-                            shared question pool.
+                            Your paper can be copied and remixed by anyone.
+                        </li>
+                        <li>
+                            Your paper aligns with the{" "}
+                            <Link
+                                to="/legal/copyright"
+                                className="underline text-primary"
+                            >
+                                COPYRIGHT.md
+                            </Link>{" "}
+                            document, and you are aware that you may risk
+                            deletion if in violation.
                         </li>
                     </ul>
                     <p className="text-sm font-medium">Continue?</p>
@@ -391,4 +431,7 @@ export function PaperSettings(
             </Dialog>
         </>
     );
-}
+}, (prev, next) =>
+    sameSettingsPaper(prev.paper, next.paper) &&
+    prev.onSave === next.onSave &&
+    prev.onOpenChange === next.onOpenChange);

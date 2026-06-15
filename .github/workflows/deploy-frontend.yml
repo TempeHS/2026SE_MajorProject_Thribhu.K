@@ -1,0 +1,74 @@
+# THIS IS MADE WITH AI, DO NOT MARK
+name: Deploy Frontend
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build frontend
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Check BACKEND_URL
+        run: |
+          if [ -z "$BACKEND_URL" ]; then
+            echo "::error::Set a GitHub Actions variable named BACKEND_URL to your deployed backend origin."
+            exit 1
+          fi
+        env:
+          BACKEND_URL: ${{ vars.BACKEND_URL }}
+
+      - name: Build frontend
+        run: bun run build
+        env:
+          BACKEND_URL: ${{ vars.BACKEND_URL }}
+          VITE_BACKEND_URL: ${{ vars.BACKEND_URL }}
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+
+      - name: Add SPA fallback
+        run: cp frontend/dist/index.html frontend/dist/404.html
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

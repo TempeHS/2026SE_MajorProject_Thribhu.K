@@ -5,8 +5,11 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
+const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:5000'
+const base = process.env.VITE_BASE_PATH ?? '/'
 
 export default defineConfig({
+  base,
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
@@ -15,7 +18,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': 'http://localhost:5000',
+      '/api': backendUrl,
     }
   }
 })

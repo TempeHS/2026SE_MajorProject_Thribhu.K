@@ -1,5 +1,4 @@
 import os
-import sys
 from datetime import timedelta
 
 import auth
@@ -11,6 +10,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from questions.db import prepare as prepare_paper_db
 from questions.endpoints import q_bp
+from admin import admin_bp, init_admins, teardown_admins
 from shared import BLOCKLIST
 
 load_dotenv()
@@ -20,14 +20,8 @@ static_dir = os.path.abspath(
 )
 assets_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../assets"))
 
-api_only = "--api-only" in sys.argv
-
-if api_only:
-    app = Flask(__name__)
-    print("Currently using API only configuration (flag passed with `--api-only`)")
-else:
-    app = Flask(__name__, static_folder=static_dir, static_url_path="")
-    print("Currently using static-hosting configuration")
+app = Flask(__name__)
+print("Currently using API only configuration (flag passed with `--api-only`)")
 
 # --- secure stuff ---
 CORS(app, supports_credentials=True)
@@ -55,11 +49,7 @@ def check_if_token_revoked(jwt_header, jwt_payload):
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
 def index(path):
-    if api_only:
-        return send_from_directory(assets_dir, "missing.html")
-    if path and os.path.isfile(os.path.join(app.static_folder, path)):
-        return send_from_directory(app.static_folder, path)
-    return send_from_directory(app.static_folder, "index.html")
+    return send_from_directory(assets_dir, "missing.html")
 
 
 @app.route("/ping")
@@ -79,6 +69,8 @@ def page_not_found(e):
 auth.register_blueprint(app)
 swagger.register_blueprint(app)
 app.register_blueprint(q_bp)
+app.register_blueprint(admin_bp)
+
 
 
 # --- do not add code any further than this line, or else...👻👻👻 ---
@@ -94,4 +86,8 @@ if __name__ == "__main__":
     auth_db = AuthenticationDB()
     auth_db.prepare(app.logger)
     prepare_paper_db(app.logger)
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    init_admins()
+    try:
+        app.run(debug=True, host="0.0.0.0", port=5000)
+    finally:
+        teardown_admins()

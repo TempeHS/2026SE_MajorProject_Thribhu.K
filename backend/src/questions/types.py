@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Annotated, Any, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
@@ -13,7 +13,7 @@ from sqlmodel import Field, Relationship, SQLModel
 # enumerate
 # ---------------------------------------------------------------------------
 
-Visibility = Literal["private", "public"]
+Visibility = Literal["private", "public", "removed"]
 
 QuestionType = Literal[
     "multiple_choice",
@@ -62,8 +62,7 @@ class SyllabusPoint(StrictBaseModel):
 
 class TextBlock(StrictBaseModel):
     kind: Literal["text"]
-    text: str = PydanticField(min_length=1)
-
+    text: str
 
 class ImageBlock(StrictBaseModel):
     kind: Literal["image"]
@@ -93,6 +92,72 @@ class ChoiceOption(StrictBaseModel):
     content: list[ContentBlock] = PydanticField(min_length=1)
 
 
+class QuestionAnswer(StrictBaseModel):
+    option_label: str | None = PydanticField(
+        default=None,
+        pattern=r"^[A-Z]$",
+        description="Correct option label for multiple-choice questions.",
+    )
+    summary: str | None = PydanticField(
+        default=None,
+        description="Concise final answer or answer summary.",
+    )
+    content: list[ContentBlock] | None = PydanticField(
+        default=None,
+        description="Worked solution or answer content.",
+    )
+    alternatives: list[list[ContentBlock]] | None = PydanticField(
+        default=None,
+        description="Alternative valid answer forms or solution paths.",
+    )
+
+
+def _parse_answer(raw: str | None) -> str | QuestionAnswer | None:
+    """Deserialize a plain string or JSON-encoded QuestionAnswer."""
+    if raw is None:
+        return None
+    if raw.startswith("{"):
+        try:
+            return QuestionAnswer.model_validate(json.loads(raw))
+        except Exception:
+            return raw
+    return raw
+
+
+class RubricCriterion(StrictBaseModel):
+    label: str | None = PydanticField(
+        default=None,
+        description="Optional criterion label or band name.",
+    )
+    marks: int | None = PydanticField(
+        default=None,
+        ge=0,
+        description="Exact marks awarded when this criterion is met.",
+    )
+    min_marks: int | None = PydanticField(
+        default=None,
+        ge=0,
+        description="Lower bound for a mark range.",
+    )
+    max_marks: int | None = PydanticField(
+        default=None,
+        ge=0,
+        description="Upper bound for a mark range.",
+    )
+    description: list[ContentBlock] = PydanticField(
+        min_length=1,
+        description="Criterion description, including notation or tables.",
+    )
+
+
+class QuestionRubric(StrictBaseModel):
+    criteria: list[RubricCriterion] = PydanticField(min_length=1)
+    notes: list[ContentBlock] | None = PydanticField(
+        default=None,
+        description="Additional marking notes not tied to a single criterion.",
+    )
+
+
 class QuestionPart(StrictBaseModel):
     label: str = PydanticField(
         pattern=r"^[a-z]+$",
@@ -107,6 +172,15 @@ class QuestionPart(StrictBaseModel):
     is_independent: bool | None = PydanticField(
         default=None,
         description="True if this part stands alone from the previous part's context.",
+    )
+    answer: str | QuestionAnswer | None = PydanticField(
+        default=None,
+        description="Answer material for this sub-part.",
+    )
+    rubric: QuestionRubric | None = None
+    guidelines: list[ContentBlock] | None = PydanticField(
+        default=None,
+        description="General marking guidelines, feedback, common errors or comments.",
     )
 
 
@@ -150,6 +224,20 @@ class QuestionSyllabusPointDB(SQLModel, table=True):
     label: str | None = None
 
 
+class AssetDB(SQLModel, table=True):
+    """Binary assets referenced by asset:// URLs in paper content."""
+
+    __tablename__ = "assets"
+
+    id: str = Field(primary_key=True)
+    paper_id: str = Field(foreign_key="papers.id")
+    uploader_id: str
+    mime_type: str
+    filename: str | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
 # ---------------------------------------------------------------------------
 # Main table models
 # ---------------------------------------------------------------------------
@@ -174,12 +262,18 @@ class PaperDB(SQLModel, table=True):
     total_marks: int = Field(default=0)
     duration_minutes: int | None = None
     topics_json: str | None = Field(default=None, sa_column=Column(Text))
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    remixed: str | None = Field(default=None)
 
     # Relationships
-    questions: list["QuestionDB"] = Relationship(back_populates="paper")
-    outcomes: list["PaperOutcome"] = Relationship()
+    questions: list["QuestionDB"] = Relationship(
+        back_populates="paper",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
+    outcomes: list["PaperOutcome"] = Relationship(
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
 
     # --- JSON helpers ---
 
@@ -217,6 +311,9 @@ class QuestionDB(SQLModel, table=True):
 
     answer: str | None = None
     difficulty: str | None = None  # Difficulty
+    remixed_from: str | None = Field(default=None)
+    source_question_id: str | None = Field(default=None)
+    source_paper_id: str | None = Field(default=None)
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -300,11 +397,17 @@ class QuestionRead(BaseModel):
     content: list[ContentBlock] | None = None
     parts: list[QuestionPart] | None = None
     options: list[ChoiceOption] | None = None
-    answer: str | None = None
+    answer: str | QuestionAnswer | None = None
+    rubric: QuestionRubric | None = None
+    guidelines: list[ContentBlock] | None = None
     topics: list[str] = []
     outcomes: list[str] = []
     syllabus_points: list[SyllabusPoint] = []
     difficulty: Difficulty | None = None
+    remixed_from: str | None = None
+    source_question_id: str | None = None
+    source_paper_id: str | None = None
+    source_removed: bool = False
     created_at: datetime
     updated_at: datetime
 
@@ -330,12 +433,14 @@ class PaperMetaRead(BaseModel):
     duration_minutes: int | None = None
     created_at: datetime
     updated_at: datetime
+    remixed: str | None = Field(default=None)
 
 
 class PaperRead(PaperMetaRead):
     """Full paper with questions included."""
 
     syllabus_id: str | None = None
+    remixed: str | None = Field(default=None)
     questions: list[QuestionRead] = []
 
 
@@ -379,11 +484,16 @@ class QuestionCreate(BaseModel):
     content: list[ContentBlock] | None = None
     parts: list[QuestionPart] | None = None
     options: list[ChoiceOption] | None = None
-    answer: str | None = None
+    answer: str | QuestionAnswer | None = None
+    rubric: QuestionRubric | None = None
+    guidelines: list[ContentBlock] | None = None
     topics: list[str] | None = None
     outcomes: list[str] | None = None
     syllabus_points: list[SyllabusPoint] | None = None
     difficulty: Difficulty | None = None
+    remixed_from: str | None = None
+    source_question_id: str | None = None
+    source_paper_id: str | None = None
 
 
 class QuestionUpdate(BaseModel):
@@ -393,11 +503,16 @@ class QuestionUpdate(BaseModel):
     content: list[ContentBlock] | None = None
     parts: list[QuestionPart] | None = None
     options: list[ChoiceOption] | None = None
-    answer: str | None = None
+    answer: str | QuestionAnswer | None = None
+    rubric: QuestionRubric | None = None
+    guidelines: list[ContentBlock] | None = None
     topics: list[str] | None = None
     outcomes: list[str] | None = None
     syllabus_points: list[SyllabusPoint] | None = None
     difficulty: Difficulty | None = None
+    remixed_from: str | None = None
+    source_question_id: str | None = None
+    source_paper_id: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -410,6 +525,8 @@ def _parse_content_blocks(raw_json: str) -> list[Any]:
     data = json.loads(raw_json)
     blocks: list[Any] = []
     for item in data:
+        if item.get("kind") == "text" and not item.get("text"):
+            continue  # skip empty text blocks
         kind = item.get("kind")
         if kind == "text":
             blocks.append(TextBlock.model_validate(item))
@@ -427,7 +544,7 @@ def _dump_blocks(blocks: list[Any] | None) -> str | None:
     return json.dumps([b.model_dump() for b in blocks])
 
 
-def question_db_to_read(q: QuestionDB) -> QuestionRead:
+def question_db_to_read(q: QuestionDB, *, source_removed: bool = False) -> QuestionRead:
     """Convert a QuestionDB row into a QuestionRead API model."""
     return QuestionRead(
         id=q.id,
@@ -440,7 +557,7 @@ def question_db_to_read(q: QuestionDB) -> QuestionRead:
         content=q.get_content(),
         parts=q.get_parts(),
         options=q.get_options(),
-        answer=q.answer,
+        answer=_parse_answer(q.answer),
         topics=q.get_topics(),
         outcomes=[o.outcome_code for o in q.outcomes],
         syllabus_points=[
@@ -452,6 +569,10 @@ def question_db_to_read(q: QuestionDB) -> QuestionRead:
             for sp in q.syllabus_points
         ],
         difficulty=q.difficulty,  # type: ignore[arg-type]
+        remixed_from=q.remixed_from,
+        source_question_id=q.source_question_id,
+        source_paper_id=q.source_paper_id,
+        source_removed=source_removed,
         created_at=q.created_at,
         updated_at=q.updated_at,
     )
@@ -476,11 +597,20 @@ def paper_db_to_meta_read(p: PaperDB) -> PaperMetaRead:
         duration_minutes=p.duration_minutes,
         created_at=p.created_at,
         updated_at=p.updated_at,
+        remixed=p.remixed,
     )
 
-
-def paper_db_to_read(p: PaperDB) -> PaperRead:
+def paper_db_to_read(
+    p: PaperDB,
+    *,
+    questions: list[QuestionRead] | None = None,
+    question_count: int | None = None,
+    total_marks: int | None = None,
+) -> PaperRead:
     """Convert a PaperDB row into a full PaperRead API model."""
+    read_questions = questions if questions is not None else [
+        question_db_to_read(q) for q in p.questions
+    ]
     return PaperRead(
         id=p.id,
         title=p.title,
@@ -494,10 +624,11 @@ def paper_db_to_read(p: PaperDB) -> PaperRead:
         topics=p.get_topics(),
         outcomes=[o.outcome_code for o in p.outcomes],
         visibility=p.visibility,  # type: ignore[arg-type]
-        question_count=p.question_count,
-        total_marks=p.total_marks,
+        question_count=p.question_count if question_count is None else question_count,
+        total_marks=p.total_marks if total_marks is None else total_marks,
         duration_minutes=p.duration_minutes,
         created_at=p.created_at,
         updated_at=p.updated_at,
-        questions=[question_db_to_read(q) for q in p.questions],
+        remixed=p.remixed,
+        questions=read_questions,
     )

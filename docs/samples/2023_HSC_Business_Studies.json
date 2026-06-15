@@ -1,0 +1,1623 @@
+{
+  "id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+  "title": "2023 HSC Business Studies",
+  "author_id": "1",
+  "subject": "Business Studies",
+  "year": 2023,
+  "source": "hsc",
+  "visibility": "public",
+  "question_count": 27,
+  "total_marks": 101,
+  "created_at": "2026-06-13T13:23:37.761Z",
+  "updated_at": "2026-06-13T16:18:08.200Z",
+  "questions": [
+    {
+      "id": "8b8a7212-b55d-45c0-8932-7915061a52cc",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 1,
+      "type": "multiple_choice",
+      "marks": 1,
+      "content": [
+        {
+          "kind": "text",
+          "text": "Businesses offer employees rewards in order to..."
+        }
+      ],
+      "created_at": "2026-06-13T13:23:42.730Z",
+      "updated_at": "2026-06-13T13:23:42.730Z",
+      "options": [
+        {
+          "label": "A",
+          "content": [
+            {
+              "kind": "text",
+              "text": "prevent the possibility of industrial action"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "content": [
+            {
+              "kind": "text",
+              "text": "recognise the value of their effort to the business."
+            }
+          ]
+        },
+        {
+          "label": "C",
+          "content": [
+            {
+              "kind": "text",
+              "text": "fulfil federal government legislation requirements."
+            }
+          ]
+        },
+        {
+          "label": "D",
+          "content": [
+            {
+              "kind": "text",
+              "text": "provide employees with an income to meet the costs of living."
+            }
+          ]
+        }
+      ],
+      "answer": {
+        "option_label": "B",
+        "content": [
+          {
+            "kind": "text",
+            "text": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "329a2e23-daa4-47ed-8680-c37e1720d5c7",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 2,
+      "type": "multiple_choice",
+      "marks": 1,
+      "content": [
+        {
+          "kind": "text",
+          "text": "Which of the following would be the main performance objective being targeted by this\nflorist?"
+        }
+      ],
+      "created_at": "2026-06-13T13:24:09.435Z",
+      "updated_at": "2026-06-13T13:24:09.435Z",
+      "options": [
+        {
+          "label": "A",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Customisation"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Flexibility"
+            }
+          ]
+        },
+        {
+          "label": "C",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Quality"
+            }
+          ]
+        },
+        {
+          "label": "D",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Speed"
+            }
+          ]
+        }
+      ],
+      "stimulus": [
+        {
+          "kind": "text",
+          "text": "A florist designs floral displays for weddings to suit the colour preferences of individual\ncouples."
+        }
+      ],
+      "answer": {
+        "option_label": "A"
+      }
+    },
+    {
+      "id": "c31a4124-18e9-47fe-b450-17b907160785",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 3,
+      "type": "multiple_choice",
+      "marks": 1,
+      "content": [
+        {
+          "kind": "text",
+          "text": "Which of the following best illustrates *relationship marketing*?"
+        }
+      ],
+      "created_at": "2026-06-13T13:24:26.527Z",
+      "updated_at": "2026-06-13T13:24:26.527Z",
+      "options": [
+        {
+          "label": "A",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Creating long-term customer loyalty\n"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Distributing goods directly to customers"
+            }
+          ]
+        },
+        {
+          "label": "C",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Using promotions to increase customer sales"
+            }
+          ]
+        },
+        {
+          "label": "D",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Basing the marketing mix on customer feedback"
+            }
+          ]
+        }
+      ],
+      "answer": {
+        "option_label": "A"
+      }
+    },
+    {
+      "id": "436da0bf-ca6a-4ebd-b461-b458ec2ffd5a",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 4,
+      "type": "multiple_choice",
+      "marks": 1,
+      "content": [
+        {
+          "kind": "text",
+          "text": "As a result of this injury, what support is this employee entitled to?"
+        }
+      ],
+      "created_at": "2026-06-13T13:25:42.153Z",
+      "updated_at": "2026-06-13T13:25:42.153Z",
+      "options": [
+        {
+          "label": "A",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Mediation"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Payment in advance\n"
+            }
+          ]
+        },
+        {
+          "label": "C",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Workers compensation"
+            }
+          ]
+        },
+        {
+          "label": "D",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Training and development"
+            }
+          ]
+        }
+      ],
+      "stimulus": [
+        {
+          "kind": "text",
+          "text": " An employee receives an electrical burn while working. The employee requires hospital treatment and is unable to return to work for three months"
+        }
+      ],
+      "answer": {
+        "option_label": "C"
+      }
+    },
+    {
+      "id": "d4d4afc5-07bb-45d2-9072-bd205b1d1bb9",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 5,
+      "type": "multiple_choice",
+      "marks": 1,
+      "content": [
+        {
+          "kind": "text",
+          "text": "Which marketing strategy would most likely be used?"
+        }
+      ],
+      "created_at": "2026-06-13T13:26:20.895Z",
+      "updated_at": "2026-06-13T13:26:20.895Z",
+      "options": [
+        {
+          "label": "A",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Branding"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Skimming"
+            }
+          ]
+        },
+        {
+          "label": "C",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Penetration"
+            }
+          ]
+        },
+        {
+          "label": "D",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Price points"
+            }
+          ]
+        }
+      ],
+      "stimulus": [
+        {
+          "kind": "text",
+          "text": "A business wants to quickly achieve a large market share for a product. "
+        }
+      ],
+      "answer": {
+        "option_label": "C"
+      }
+    },
+    {
+      "id": "8f1da306-38d0-4c7f-98ea-2119e1f88e2a",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 6,
+      "type": "multiple_choice",
+      "marks": 1,
+      "content": [
+        {
+          "kind": "text",
+          "text": "Which influence on human resources is most likely to have led to this?"
+        }
+      ],
+      "created_at": "2026-06-13T13:26:43.886Z",
+      "updated_at": "2026-06-13T13:26:43.886Z",
+      "options": [
+        {
+          "label": "A",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Economic"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Legal"
+            }
+          ]
+        },
+        {
+          "label": "C",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Operations"
+            }
+          ]
+        },
+        {
+          "label": "D",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Social"
+            }
+          ]
+        }
+      ],
+      "stimulus": [
+        {
+          "kind": "text",
+          "text": "A mattress manufacturer reduced the working hours of its factory workers due to a\ndecrease in demand."
+        }
+      ],
+      "answer": {
+        "option_label": "A"
+      }
+    },
+    {
+      "id": "236d5985-d5ae-4bce-9ec8-e42ce7f759a1",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 7,
+      "type": "multiple_choice",
+      "marks": 1,
+      "content": [
+        {
+          "kind": "text",
+          "text": "Which of the following shows the correct order of the steps in a marketing plan?"
+        }
+      ],
+      "created_at": "2026-06-13T13:27:05.262Z",
+      "updated_at": "2026-06-13T13:27:05.262Z",
+      "options": [
+        {
+          "label": "A",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Market research, establishing market objectives, identifying target markets,\nsituational analysis"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Establishing market objectives, identifying target markets, situational analysis,\nmarket research"
+            }
+          ]
+        },
+        {
+          "label": "C",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Identifying target markets, situational analysis, market research, establishing\nmarket objectives"
+            }
+          ]
+        },
+        {
+          "label": "D",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Situational analysis, market research, establishing market objectives, identifying\ntarget markets"
+            }
+          ]
+        }
+      ],
+      "stimulus": [
+        {
+          "kind": "text",
+          "text": ""
+        }
+      ],
+      "answer": {
+        "option_label": "D"
+      }
+    },
+    {
+      "id": "c6fc4255-a824-43d8-a683-46ab6d2b342e",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 8,
+      "type": "multiple_choice",
+      "marks": 1,
+      "content": [
+        {
+          "kind": "text",
+          "text": "Which form of payment has the lowest level of risk for the exporter?"
+        }
+      ],
+      "created_at": "2026-06-13T13:27:32.977Z",
+      "updated_at": "2026-06-13T13:27:32.977Z",
+      "options": [
+        {
+          "label": "A",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Clean payment"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Letter of credit"
+            }
+          ]
+        },
+        {
+          "label": "C",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Bill of exchange"
+            }
+          ]
+        },
+        {
+          "label": "D",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Payment in advance"
+            }
+          ]
+        }
+      ],
+      "answer": {
+        "option_label": "D"
+      },
+      "stimulus": [
+        {
+          "kind": "text",
+          "text": "An export company based in Sydney sells Australian-made art to the Asian market."
+        }
+      ]
+    },
+    {
+      "id": "cd0b36e9-c804-43d7-b070-f81fede21f91",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 9,
+      "type": "multiple_choice",
+      "marks": 1,
+      "content": [
+        {
+          "kind": "text",
+          "text": "The training of staff in the manufacturing process is an example of interdependence\nbetween which of the following business functions?"
+        }
+      ],
+      "created_at": "2026-06-13T13:28:08.053Z",
+      "updated_at": "2026-06-13T13:28:08.053Z",
+      "stimulus": [
+        {
+          "kind": "text",
+          "text": ""
+        }
+      ],
+      "options": [
+        {
+          "label": "A",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Finance and marketing"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Marketing and operations"
+            }
+          ]
+        },
+        {
+          "label": "C",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Finance and human resources"
+            }
+          ]
+        },
+        {
+          "label": "D",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Operations and human resources"
+            }
+          ]
+        }
+      ],
+      "answer": {
+        "option_label": "D"
+      }
+    },
+    {
+      "id": "db09d334-83b4-46df-a3d7-726e1aa06cb4",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 10,
+      "type": "multiple_choice",
+      "marks": 1,
+      "content": [
+        {
+          "kind": "text",
+          "text": "Which marketing strategy is being used?"
+        }
+      ],
+      "created_at": "2026-06-13T13:28:41.085Z",
+      "updated_at": "2026-06-13T13:28:41.085Z",
+      "options": [
+        {
+          "label": "A",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Loss leaders"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Opinion leaders"
+            }
+          ]
+        },
+        {
+          "label": "C",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Personal selling"
+            }
+          ]
+        },
+        {
+          "label": "D",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Sales promotion"
+            }
+          ]
+        }
+      ],
+      "stimulus": [
+        {
+          "kind": "text",
+          "text": "An energy drink business uses a celebrity to promote its products online."
+        }
+      ],
+      "answer": {
+        "option_label": "B"
+      }
+    },
+    {
+      "id": "727333f8-19c5-473a-954b-45a8a01e8a37",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 11,
+      "type": "multiple_choice",
+      "marks": 1,
+      "content": [
+        {
+          "kind": "text",
+          "text": "Which of the following is involved in making workplace agreements and resolving\nworkplace disputes?"
+        }
+      ],
+      "created_at": "2026-06-13T13:29:03.499Z",
+      "updated_at": "2026-06-13T13:29:03.499Z",
+      "options": [
+        {
+          "label": "A",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Fair Work Commission"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Australian Human Rights Commission"
+            }
+          ]
+        },
+        {
+          "label": "C",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Australian Securities and Investments Commission"
+            }
+          ]
+        },
+        {
+          "label": "D",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Australian Competition and Consumer Commission"
+            }
+          ]
+        }
+      ],
+      "answer": {
+        "option_label": "A"
+      }
+    },
+    {
+      "id": "5ddc19ea-849c-465f-9b38-8c7b70b6ad75",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 12,
+      "type": "multiple_choice",
+      "marks": 1,
+      "content": [
+        {
+          "kind": "text",
+          "text": "Which long-term source of finance would be most appropriate for this system?"
+        }
+      ],
+      "created_at": "2026-06-13T13:29:20.491Z",
+      "updated_at": "2026-06-13T13:29:20.491Z",
+      "options": [
+        {
+          "label": "A",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Derivatives"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Hedging"
+            }
+          ]
+        },
+        {
+          "label": "C",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Leasing"
+            }
+          ]
+        },
+        {
+          "label": "D",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Overdraft"
+            }
+          ]
+        }
+      ],
+      "stimulus": [
+        {
+          "kind": "text",
+          "text": "An Australian theme park wants to implement a new point-of-sale system that allows\nimproved tracking of stock levels. The system will cost $185 000 to establish."
+        }
+      ],
+      "answer": {
+        "option_label": "C"
+      }
+    },
+    {
+      "id": "f834aad7-4f76-45b4-828b-64227774342d",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 13,
+      "type": "multiple_choice",
+      "marks": 1,
+      "content": [
+        {
+          "kind": "text",
+          "text": "Under consumer law, why must the business refund the customer the cost of the mobile\nphone?"
+        }
+      ],
+      "created_at": "2026-06-13T13:29:41.330Z",
+      "updated_at": "2026-06-13T13:29:41.330Z",
+      "stimulus": [
+        {
+          "kind": "text",
+          "text": "A customer returns a recently purchased 5G mobile phone to the place of purchase as the\nphone was faulty."
+        }
+      ],
+      "options": [
+        {
+          "label": "A",
+          "content": [
+            {
+              "kind": "text",
+              "text": "It is ethical to replace defective goods. "
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "content": [
+            {
+              "kind": "text",
+              "text": "It is within the implied conditions of the contract."
+            }
+          ]
+        },
+        {
+          "label": "C",
+          "content": [
+            {
+              "kind": "text",
+              "text": "It is important to meet corporate social responsibility."
+            }
+          ]
+        },
+        {
+          "label": "D",
+          "content": [
+            {
+              "kind": "text",
+              "text": "It can be considered deceptive and misleading advertising."
+            }
+          ]
+        }
+      ],
+      "answer": {
+        "option_label": "B"
+      }
+    },
+    {
+      "id": "7436a7e6-07e5-44db-8101-fcac2af73198",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 14,
+      "type": "multiple_choice",
+      "marks": 1,
+      "content": [
+        {
+          "kind": "text",
+          "text": "What impact would this have on the goods imported to Australia and the goods exported\nto the United States?"
+        }
+      ],
+      "created_at": "2026-06-13T13:30:04.929Z",
+      "updated_at": "2026-06-13T13:30:04.929Z",
+      "options": [
+        {
+          "label": "A",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Imports: More expensive\nExports: More expensive"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Imports: Less expensive\nExports: More expensive"
+            }
+          ]
+        },
+        {
+          "label": "C",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Imports: Less expensive\nExports: Less expensive"
+            }
+          ]
+        },
+        {
+          "label": "D",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Imports: More expensive\nExports: Less expensive"
+            }
+          ]
+        }
+      ],
+      "stimulus": [
+        {
+          "kind": "text",
+          "text": "The Australian dollar increases from 0.50 to 0.70 USD"
+        }
+      ],
+      "answer": {
+        "option_label": "B"
+      }
+    },
+    {
+      "id": "7d899dfe-8145-46da-b686-86519af18c43",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 15,
+      "type": "multiple_choice",
+      "marks": 1,
+      "content": [
+        {
+          "kind": "text",
+          "text": "Which of the following best describes this operations management strategy?\n"
+        }
+      ],
+      "created_at": "2026-06-13T13:30:47.447Z",
+      "updated_at": "2026-06-13T13:30:47.447Z",
+      "options": [
+        {
+          "label": "A",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Outsourcing"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Cost leadership"
+            }
+          ]
+        },
+        {
+          "label": "C",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Supply chain development"
+            }
+          ]
+        },
+        {
+          "label": "D",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Goods/services differentiation"
+            }
+          ]
+        }
+      ],
+      "stimulus": [
+        {
+          "kind": "text",
+          "text": "A large construction company has decided to focus their operations on design and\ninnovation. \n"
+        }
+      ],
+      "answer": {
+        "option_label": "D"
+      }
+    },
+    {
+      "id": "397226e3-f4c0-473b-950f-df3a229ed0fa",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 16,
+      "type": "multiple_choice",
+      "marks": 1,
+      "content": [
+        {
+          "kind": "text",
+          "text": "What is the net profit ratio for this business in 2022? (Net profit ratio = net profit ÷ sales)"
+        }
+      ],
+      "created_at": "2026-06-13T13:31:06.375Z",
+      "updated_at": "2026-06-13T13:31:06.375Z",
+      "options": [
+        {
+          "label": "A",
+          "content": [
+            {
+              "kind": "text",
+              "text": "$13\\%$"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "content": [
+            {
+              "kind": "text",
+              "text": "$20\\%$"
+            }
+          ]
+        },
+        {
+          "label": "C",
+          "content": [
+            {
+              "kind": "text",
+              "text": "$53\\%$"
+            }
+          ]
+        },
+        {
+          "label": "D",
+          "content": [
+            {
+              "kind": "text",
+              "text": "$150\\%$"
+            }
+          ]
+        }
+      ],
+      "stimulus": [
+        {
+          "kind": "text",
+          "text": "The table shows extracts from the financial statements of a business for 2022.D"
+        },
+        {
+          "kind": "image",
+          "url": "asset://e03b69f9-3669-4f65-91ae-765cdeb323fe",
+          "mime_type": "image/png"
+        }
+      ],
+      "answer": {
+        "option_label": "B"
+      }
+    },
+    {
+      "id": "679de1c1-01fe-4c99-8af2-d263f25b889d",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 17,
+      "type": "multiple_choice",
+      "marks": 1,
+      "content": [
+        {
+          "kind": "text",
+          "text": "Which tasks could be occurring at the same time?"
+        }
+      ],
+      "created_at": "2026-06-13T13:31:58.384Z",
+      "updated_at": "2026-06-13T13:31:58.384Z",
+      "stimulus": [
+        {
+          "kind": "text",
+          "text": "A critical path analysis is shown for a job."
+        },
+        {
+          "kind": "image",
+          "url": "asset://bda2738e-a077-4941-8b31-797352ed4ddb",
+          "mime_type": "image/png"
+        }
+      ],
+      "options": [
+        {
+          "label": "A",
+          "content": [
+            {
+              "kind": "text",
+              "text": "$\\text{AB, BC and CD}$"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "content": [
+            {
+              "kind": "text",
+              "text": "$\\text{AB, BF and FC}$"
+            }
+          ]
+        },
+        {
+          "label": "C",
+          "content": [
+            {
+              "kind": "text",
+              "text": "$\\text{BE, BF and BC}$"
+            }
+          ]
+        },
+        {
+          "label": "D",
+          "content": [
+            {
+              "kind": "text",
+              "text": "$\\text{BE, BF and EC}$"
+            }
+          ]
+        }
+      ],
+      "answer": {
+        "option_label": "C"
+      }
+    },
+    {
+      "id": "486cd53d-affe-4e18-addd-66204f3a3852",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 18,
+      "type": "multiple_choice",
+      "marks": 1,
+      "content": [
+        {
+          "kind": "text",
+          "text": "Task $\\text{EC}$ is delayed and takes an additional 7 days.\n\nBy how many days will the length of the critical path change?"
+        }
+      ],
+      "created_at": "2026-06-13T13:31:58.384Z",
+      "updated_at": "2026-06-13T13:31:58.384Z",
+      "stimulus": [
+        {
+          "kind": "text",
+          "text": "A critical path analysis is shown for a job."
+        },
+        {
+          "kind": "image",
+          "url": "asset://bda2738e-a077-4941-8b31-797352ed4ddb",
+          "mime_type": "image/png"
+        }
+      ],
+      "options": [
+        {
+          "label": "A",
+          "content": [
+            {
+              "kind": "text",
+              "text": "0 days"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "content": [
+            {
+              "kind": "text",
+              "text": "2 days"
+            }
+          ]
+        },
+        {
+          "label": "C",
+          "content": [
+            {
+              "kind": "text",
+              "text": "4 days"
+            }
+          ]
+        },
+        {
+          "label": "D",
+          "content": [
+            {
+              "kind": "text",
+              "text": "6 days"
+            }
+          ]
+        }
+      ],
+      "answer": {
+        "option_label": "B"
+      }
+    },
+    {
+      "id": "b5a4e50a-c59f-4e46-adf1-d45a7dbdca34",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 19,
+      "type": "multiple_choice",
+      "marks": 1,
+      "content": [
+        {
+          "kind": "text",
+          "text": "Which of the following stakeholders has the power to implement workplace reforms to\nsupport employees of various abilities, ages and genders?"
+        }
+      ],
+      "created_at": "2026-06-13T13:32:56.790Z",
+      "updated_at": "2026-06-13T13:32:56.790Z",
+      "options": [
+        {
+          "label": "A",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Unions"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Society"
+            }
+          ]
+        },
+        {
+          "label": "C",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Employer associations"
+            }
+          ]
+        },
+        {
+          "label": "D",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Government organisations"
+            }
+          ]
+        }
+      ],
+      "answer": {
+        "option_label": "D"
+      }
+    },
+    {
+      "id": "94fe21a1-70f9-4451-8e72-f0a15db6f80e",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 20,
+      "type": "multiple_choice",
+      "marks": 1,
+      "content": [
+        {
+          "kind": "text",
+          "text": "Which strategy would be most effective in improving the current ratio for this business?\n(Current ratio = current assets ÷ current liabilities)"
+        }
+      ],
+      "created_at": "2026-06-13T13:33:54.783Z",
+      "updated_at": "2026-06-13T13:33:54.783Z",
+      "stimulus": [
+        {
+          "kind": "text",
+          "text": "The following is an extract from a business balance sheet."
+        },
+        {
+          "kind": "image",
+          "url": "asset://7c8ce54a-64ff-4fe9-a2a3-83a5ab2895c0",
+          "mime_type": "image/png"
+        }
+      ],
+      "options": [
+        {
+          "label": "A",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Sell excess machinery and equipment"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Borrow money on a short-term bank loan"
+            }
+          ]
+        },
+        {
+          "label": "C",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Take on a new mortgage to purchase buildings"
+            }
+          ]
+        },
+        {
+          "label": "D",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Offer a discount to customers for early payment"
+            }
+          ]
+        }
+      ],
+      "answer": {
+        "option_label": "A"
+      }
+    },
+    {
+      "id": "f39c5c68-3244-44eb-b08b-e4314a22c4da",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 21,
+      "type": "long_answer",
+      "marks": 10,
+      "content": [],
+      "created_at": "2026-06-13T13:36:15.055Z",
+      "updated_at": "2026-06-13T13:36:15.055Z",
+      "stimulus": [
+        {
+          "kind": "text",
+          "text": "An Australian tyre manufacturer is expanding its business. In order to reduce operating costs and increase sales and profit, rubber will be sourced from the global market. \n\nThe business wants to:\n- maintain quality outputs\n- achieve economies of scale."
+        }
+      ],
+      "parts": [
+        {
+          "label": "a",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Outline ONE potential issue this business could face in relation to both cost and\nquality of outputs."
+            }
+          ],
+          "marks": 2,
+          "stimulus": [
+            {
+              "kind": "text",
+              "text": ""
+            }
+          ],
+          "is_independent": true,
+          "answer": {
+            "content": [
+              {
+                "kind": "text",
+                "text": "| Criteria | Marks |\n| -------- | ------- |\n|  - Outlines a potential issue this business could face in relation to both cost and quality of outputs | 2 |\n|  - Provides some relevant information  | 1 |"
+              }
+            ],
+            "summary": "The business can reduce the costs of inputs when they source globally, cheaper inputs such as rubber, may result in lower quality tyres."
+          }
+        },
+        {
+          "label": "b",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Explain the benefits of achieving economies of scale for both the business and\nconsumers."
+            }
+          ],
+          "marks": 3,
+          "is_independent": true,
+          "stimulus": [
+            {
+              "kind": "text",
+              "text": ""
+            }
+          ],
+          "answer": {
+            "summary": "Economies of scale will provide this business with cost advantages by increasing the volume of its production, allowing the business to lower the price of the finished product. Consumers will benefit from the reduced price and the business will then increase sales and profits in the\nlong term. ",
+            "content": [
+              {
+                "kind": "text",
+                "text": "| Criteria | Marks |\n| -------- | ------- |\n|  - Explains the benefits of achieving economies of scale for both the\nbusiness and consumers | 3 |\n|  - Describes the benefit(s) of achieving economies of scale for the business\nand/or consumers  | 2 |\n| -  Provides some relevant information | 1 |"
+              }
+            ]
+          }
+        },
+        {
+          "label": "c",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Explain why both staff and management might be resistant to this change."
+            }
+          ],
+          "marks": 5,
+          "stimulus": [
+            {
+              "kind": "text",
+              "text": "The owners of the tyre manufacturing business have purchased leading-edge\ntechnology to help achieve economies of scale."
+            }
+          ],
+          "is_independent": true,
+          "answer": {
+            "content": [
+              {
+                "kind": "text",
+                "text": "| Criteria | Marks |\n| -------- | ------- |\n| - Provides a thorough explanation of why staff and management in this\nbusiness might be resistant to this change | 5 |\n| - Provides a sound explanation of why staff and management in this\nbusiness might be resistant to this change | 4 |\n|  - Demonstrates some understanding of why staff and/or management in\nthis business might be resistant to this change  | 3 |\n|  - Identifies why staff and/or management in this business might be\nresistant to this change  | 2 |\n| -  Provides some relevant information | 1 |"
+              }
+            ],
+            "summary": "The leading-edge technology purchased would be costly for management. The new technology may also require staff and management to be retrained. This can be expensive for management and staff may be resistant to learning new techniques due to fear or inertia.\nFear of job loss may cause resistance to change as staff may feel that processes may become automated and their jobs may become redundant. This also imposes extra costs to the business. "
+          }
+        }
+      ]
+    },
+    {
+      "id": "d3a02b8f-6284-4df8-8031-aef5fa471fee",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 22,
+      "type": "long_answer",
+      "marks": 10,
+      "content": [],
+      "created_at": "2026-06-13T13:37:09.577Z",
+      "updated_at": "2026-06-13T13:37:09.577Z",
+      "parts": [
+        {
+          "label": "a",
+          "content": [
+            {
+              "kind": "text",
+              "text": "What is the purpose of Equal Employment Opportunity (EEO) legislation?"
+            }
+          ],
+          "marks": 2,
+          "is_independent": true
+        },
+        {
+          "label": "b",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Outline TWO human resource issues found in this advertisement."
+            }
+          ],
+          "marks": 3,
+          "stimulus": [
+            {
+              "kind": "text",
+              "text": "The advertisement for a store manager is shown."
+            },
+            {
+              "kind": "image",
+              "url": "asset://9f295fdd-8992-4fd4-b43c-b477d5e35f1c",
+              "mime_type": "image/png"
+            }
+          ],
+          "is_independent": true
+        },
+        {
+          "label": "c",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Explain the social influences that have contributed to the changing labour force\nparticipation rates in the period 1981−2021."
+            }
+          ],
+          "marks": 5,
+          "stimulus": [
+            {
+              "kind": "text",
+              "text": "The table shows labour force participation rates for males and females in\nAustralia, 1981−2021."
+            },
+            {
+              "kind": "image",
+              "url": "asset://f9a3d9fb-0ea5-4fde-980b-d6469be893bd",
+              "mime_type": "image/png"
+            }
+          ],
+          "is_independent": true
+        }
+      ]
+    },
+    {
+      "id": "c0d0e592-17ab-48fe-8ea7-2cc7f986443a",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 23,
+      "type": "long_answer",
+      "marks": 10,
+      "content": [],
+      "created_at": "2026-06-13T13:41:12.150Z",
+      "updated_at": "2026-06-13T13:41:12.150Z",
+      "parts": [
+        {
+          "label": "a",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Outline the current product life cycle stage of this cereal."
+            }
+          ],
+          "marks": 2,
+          "stimulus": [
+            {
+              "kind": "text",
+              "text": ""
+            }
+          ],
+          "is_independent": true
+        },
+        {
+          "label": "b",
+          "content": [
+            {
+              "kind": "text",
+              "text": ""
+            }
+          ],
+          "marks": 3,
+          "stimulus": [
+            {
+              "kind": "text",
+              "text": "How could a *niche market approach* increase sales for this cereal manufacturer?"
+            }
+          ],
+          "is_independent": true,
+          "answer": {
+            "content": [
+              {
+                "kind": "text",
+                "text": "| Criteria | Marks |\n| --- | ---: |\n| Makes a detailed and informed judgement of the extent to which influences on marketing affect business success.<br><br>Applies relevant case study/studies and contemporary business issues.<br><br>Presents a sustained, logical and cohesive response and communicates clearly using relevant business terminology and concepts. | 17-20 |\n| Makes a clear judgement of the extent to which influences on marketing affect business success.<br><br>Uses relevant case study/studies and contemporary business issues.<br><br>Presents a logical and cohesive response using relevant business terminology and concepts. | 13-16 |\n| Makes some judgement of the extent to which influences on marketing affect business success.<br><br>Makes reference to case study/studies and contemporary business issues.<br><br>Communicates using business terminology and concepts. | 9-12 |\n| Makes statements or generalised comment(s) about influences on marketing and/or business success.<br><br>Makes limited reference to case study/studies and/or contemporary business issues.<br><br>Communicates using some business terminology and/or concepts. | 5-8 |\n| Makes limited reference to marketing.<br><br>May identify case study/studies.<br><br>Uses basic business terminology and/or concepts. | 1-4 |\n"
+              }
+            ]
+          }
+        },
+        {
+          "label": "c",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Justify ONE global marketing strategy this cereal manufacturer could use to\nexpand into the global market."
+            }
+          ],
+          "marks": 5,
+          "is_independent": true
+        }
+      ],
+      "stimulus": [
+        {
+          "kind": "text",
+          "text": "A cereal manufacturer has decided to change the packaging of its product in an attempt to reverse a drop in sales and remain competitive with existing businesses. It is also considering growing its target market by catering for health-conscious consumers in Australia and eventually expanding into the global market."
+        }
+      ]
+    },
+    {
+      "id": "91efcdf7-5f34-412e-8559-162320eea464",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 24,
+      "type": "long_answer",
+      "marks": 10,
+      "content": [],
+      "created_at": "2026-06-13T13:42:38.324Z",
+      "updated_at": "2026-06-13T13:42:38.324Z",
+      "parts": [
+        {
+          "label": "a",
+          "content": [
+            {
+              "kind": "text",
+              "text": "What is the purpose of a cash flow statement?"
+            }
+          ],
+          "marks": 2,
+          "is_independent": true
+        },
+        {
+          "label": "b",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Explain a possible conflict between ONE short-term and ONE long-term\nfinancial objective."
+            }
+          ],
+          "marks": 3,
+          "is_independent": true
+        },
+        {
+          "label": "c",
+          "content": [
+            {
+              "kind": "text",
+              "text": "Explain TWO limitations of financial reports."
+            }
+          ],
+          "marks": 5,
+          "is_independent": true
+        }
+      ]
+    },
+    {
+      "id": "68426a85-7df4-47b8-9d76-2017ea5bbacd",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 25,
+      "type": "short_answer",
+      "marks": 20,
+      "content": [
+        {
+          "kind": "text",
+          "text": "The directors have asked you to write a business report in which you:\n- outline some of the challenges including the global factors of costs, skills and supply the\nbusiness may need to consider in recruiting and retaining staff\n- compare the use of debt and equity as sources of finance\n- recommend ONE source of finance this business could use to fund its expansion."
+        }
+      ],
+      "created_at": "2026-06-13T13:45:30.058Z",
+      "updated_at": "2026-06-13T13:45:30.058Z",
+      "stimulus": [
+        {
+          "kind": "text",
+          "text": "Future Century Gaming Pty Ltd operates an online gaming platform targeting players aged 18−40 in Australia. It has been in operation since 2012, providing subscription access to a variety of online games.\n\nThe business is considering expanding into emerging global markets but is finding it challenging to recruit and retain skilled, qualified game designers and developers in Australia. It is considering international labour markets to overcome staff shortages.\n\nThe business has decided to finance its expansion into global markets through\nexternal sources."
+        }
+      ]
+    },
+    {
+      "id": "e2dcb60f-6701-4ee6-82c0-3a36218586a7",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 26,
+      "type": "short_answer",
+      "marks": 20,
+      "content": [
+        {
+          "kind": "text",
+          "text": "To what extent do influences on marketing affect business success? "
+        }
+      ],
+      "created_at": "2026-06-13T13:50:02.216Z",
+      "updated_at": "2026-06-13T13:50:02.216Z",
+      "answer": {
+        "content": [
+          {
+            "kind": "text",
+            "text": "| Criteria | Marks |\n| --- | ---: |\n| Makes a detailed and informed judgement of the extent to which influences on marketing affect business success.<br><br>Applies relevant case study/studies and contemporary business issues.<br><br>Presents a sustained, logical and cohesive response and communicates clearly using relevant business terminology and concepts. | 17-20 |\n| Makes a clear judgement of the extent to which influences on marketing affect business success.<br><br>Uses relevant case study/studies and contemporary business issues.<br><br>Presents a logical and cohesive response using relevant business terminology and concepts. | 13-16 |\n| Makes some judgement of the extent to which influences on marketing affect business success.<br><br>Makes reference to case study/studies and contemporary business issues.<br><br>Communicates using business terminology and concepts. | 9-12 |\n| Makes statements or generalised comment(s) about influences on marketing and/or business success.<br><br>Makes limited reference to case study/studies and/or contemporary business issues.<br><br>Communicates using some business terminology and/or concepts. | 5-8 |\n| Makes limited reference to marketing.<br><br>May identify case study/studies.<br><br>Uses basic business terminology and/or concepts. | 1-4 |\n"
+          }
+        ],
+        "summary": "Influences on marketing\n-  Factors influencing customer choice\n    - psychological, sociocultural, economic, government\n- Consumer laws\n    - deceptive and misleading advertising\n    - price discrimination\n    - implied conditions\n    - warranties\n- Ethical\n    - truth, accuracy in good taste in advertising, products that may damage health,\n    - engaging in fair competition, sugging. \n"
+      }
+    },
+    {
+      "id": "1d716153-3bc8-46ff-b700-c1cf9eaf8e9c",
+      "paper_id": "b80eeb3c-b688-46c4-9fc3-6393badd320e",
+      "author_id": "1",
+      "number": 27,
+      "type": "short_answer",
+      "marks": 1,
+      "content": [
+        {
+          "kind": "text",
+          "text": "To what extent do influences on operations affect business success?"
+        }
+      ],
+      "created_at": "2026-06-13T16:05:55.816Z",
+      "updated_at": "2026-06-13T16:05:55.816Z"
+    }
+  ]
+}

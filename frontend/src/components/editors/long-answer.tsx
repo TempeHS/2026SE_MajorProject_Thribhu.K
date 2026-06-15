@@ -1,16 +1,26 @@
-import { Plus, X } from "lucide-react";
-import type { Question, QuestionPart } from "@/types/tppr-paper";
+import { ImageIcon, Plus, X } from "lucide-react";
+import type { ContentBlock, Question, QuestionPart } from "@/types/tppr-paper";
 import { Button } from "../ui/button";
 import { Field, FieldLabel } from "../ui/field";
 import { Input } from "../ui/input";
+import { Separator } from "../ui/separator";
 import { Textarea } from "../ui/textarea";
-import { firstText, withFirstText } from "./helpers";
+import {
+    answerContentText,
+    answerSummary,
+    firstText,
+    withAnswerContentText,
+    withAnswerSummary,
+    withFirstText,
+} from "./helpers";
 import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
     TooltipTrigger,
 } from "../ui/tooltip";
+import { FileUpload, FileUploadDropzone } from "../ui/file-upload";
+import { paperStore } from "@/lib/paper";
 
 const MIN_PARTS = 1;
 const MAX_PARTS = 8;
@@ -104,7 +114,92 @@ export function LongAnswerEditor({ question, onChange }: {
                                         e.target.value,
                                     ),
                                 })}
+                            onPaste={(e) => {
+                                const file = Array.from(e.clipboardData.files)
+                                    .find((f) =>
+                                        f.type.startsWith("image/")
+                                    );
+                                if (file) {
+                                    e.preventDefault();
+                                    paperStore.saveAsset(
+                                        question.paper_id,
+                                        file,
+                                    ).then((assetId) => {
+                                        updatePart(i, {
+                                            stimulus: [
+                                                ...(part.stimulus ?? []),
+                                                {
+                                                    kind: "image",
+                                                    url: `asset://${assetId}`,
+                                                    mime_type: file.type,
+                                                },
+                                            ],
+                                        });
+                                    });
+                                }
+                            }}
                         />
+                        <FileUpload
+                            accept="image/*"
+                            onAccept={(files) => {
+                                if (!files[0]) {
+                                    return;
+                                }
+                                paperStore.saveAsset(
+                                    question.paper_id,
+                                    files[0],
+                                ).then((assetId) => {
+                                    updatePart(i, {
+                                        stimulus: [
+                                            ...(part.stimulus ?? []),
+                                            {
+                                                kind: "image",
+                                                url: `asset://${assetId}`,
+                                                mime_type: files[0].type,
+                                            },
+                                        ],
+                                    });
+                                });
+                            }}
+                        >
+                            <FileUploadDropzone className="py-2">
+                                <ImageIcon className="size-4 text-muted-foreground" />
+                                <p className="text-xs text-muted-foreground">
+                                    Drop, paste or click to add an image
+                                </p>
+                            </FileUploadDropzone>
+                        </FileUpload>
+                        {(part.stimulus ?? [])
+                            .map((b, idx) => [b, idx] as const)
+                            .filter((
+                                entry,
+                            ): entry is [
+                                Extract<ContentBlock, { kind: "image" }>,
+                                number,
+                            ] => entry[0].kind === "image")
+                            .map(([img, idx]) => (
+                                <div
+                                    key={idx}
+                                    className="flex items-center justify-between rounded-md border p-2 text-xs"
+                                >
+                                    <span className="truncate text-muted-foreground">
+                                        {img.url}
+                                    </span>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                            updatePart(i, {
+                                                stimulus: part.stimulus?.filter(
+                                                    (_, j) => j !== idx,
+                                                ),
+                                            })}
+                                    >
+                                        Remove
+                                    </Button>
+                                </div>
+                            ))}
                     </Field>
 
                     <Field>
@@ -164,14 +259,62 @@ export function LongAnswerEditor({ question, onChange }: {
                                         An independent part stands alone from
                                         the previous parts' context. Together
                                         with the root stimulus, it can be
-                                        treated as its own question. For example,
-                                        when another user selects individual
-                                        questions from this paper.
+                                        treated as its own question. For
+                                        example, when another user selects
+                                        individual questions from this paper.
                                     </TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
                         </label>
                     </div>
+
+                    <Separator />
+
+                    <Field>
+                        <div className="flex items-center justify-between gap-2">
+                            <FieldLabel htmlFor={`part-${i}-answer-summary`}>
+                                Sample answer
+                            </FieldLabel>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                disabled={!part.answer}
+                                onClick={() =>
+                                    updatePart(i, { answer: undefined })}
+                            >
+                                <X /> Clear
+                            </Button>
+                        </div>
+                        <Textarea
+                            id={`part-${i}-answer-summary`}
+                            value={answerSummary(part.answer)}
+                            onChange={(e) =>
+                                updatePart(i, {
+                                    answer: withAnswerSummary(
+                                        part.answer,
+                                        e.target.value,
+                                    ),
+                                })}
+                        />
+                    </Field>
+
+                    <Field>
+                        <FieldLabel htmlFor={`part-${i}-answer-working`}>
+                            Worked solution / marking notes
+                        </FieldLabel>
+                        <Textarea
+                            id={`part-${i}-answer-working`}
+                            value={answerContentText(part.answer)}
+                            onChange={(e) =>
+                                updatePart(i, {
+                                    answer: withAnswerContentText(
+                                        part.answer,
+                                        e.target.value,
+                                    ),
+                                })}
+                        />
+                    </Field>
                 </div>
             ))}
 

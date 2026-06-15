@@ -12,9 +12,15 @@ def _parse_dt(value) -> datetime:
     return datetime.now(UTC)
 
 
-def _build_question_db(q_data: dict, paper_id: str, author_id: str) -> QuestionDB:
+def _build_question_db(
+    q_data: dict,
+    paper_id: str,
+    author_id: str,
+    *,
+    preserve_id: bool = True,
+) -> QuestionDB:
     return QuestionDB(
-        id=q_data.get("id", str(uuid.uuid4())),
+        id=q_data.get("id") if preserve_id and q_data.get("id") else str(uuid.uuid4()),
         paper_id=paper_id,
         author_id=author_id,
         number=q_data.get("number", 1),
@@ -25,8 +31,13 @@ def _build_question_db(q_data: dict, paper_id: str, author_id: str) -> QuestionD
         parts_json=json.dumps(q_data["parts"]) if q_data.get("parts") else None,
         options_json=json.dumps(q_data["options"]) if q_data.get("options") else None,
         topics_json=json.dumps(q_data["topics"]) if q_data.get("topics") else None,
-        answer=q_data.get("answer"),
+        answer=json.dumps(q_data["answer"])
+        if isinstance(q_data.get("answer"), dict)
+        else q_data.get("answer"),
         difficulty=q_data.get("difficulty"),
+        remixed_from=q_data.get("remixed_from"),
+        source_question_id=q_data.get("source_question_id"),
+        source_paper_id=q_data.get("source_paper_id"),
         created_at=_parse_dt(q_data.get("created_at")),
         updated_at=_parse_dt(q_data.get("updated_at")),
     )

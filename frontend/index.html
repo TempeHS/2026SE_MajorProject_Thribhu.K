@@ -7,10 +7,6 @@
         <title>tppr</title>
     </head>
     <body>
-        <!-- pass the jinga template to react -->
-        <script>
-            window.__CONFIG__ = {{ config | tojson }};
-        </script>
         <div id="root"></div>
         <script type="module" src="/src/main.tsx"></script>
     </body>

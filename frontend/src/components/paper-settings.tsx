@@ -64,6 +64,9 @@ export const PaperSettings = memo(function PaperSettings(
     const [visibility, setVisibility] = useState<Visibility>(paper.visibility);
     const [showPublishWarning, setShowPublishWarning] = useState(false);
     const [showUnpublishWarning, setShowUnpublishWarning] = useState(false);
+    const [duration, setDuration] = useState(
+        paper.duration_minutes?.toString() ?? "",
+    );
 
     const showCourseLevel = subject === "Mathematics" || subject === "English";
 
@@ -75,6 +78,7 @@ export const PaperSettings = memo(function PaperSettings(
             setYear(paper.year?.toString() ?? "");
             setSource(paper.source ?? "");
             setVisibility(paper.visibility);
+            setDuration(paper.duration_minutes?.toString() ?? "");
         }
         setShowPublishWarning(false);
         setShowUnpublishWarning(false);
@@ -96,6 +100,17 @@ export const PaperSettings = memo(function PaperSettings(
         save();
     }
 
+    function sameSettingsPaper(a: PaperMeta, b: PaperMeta) {
+        return a.id === b.id &&
+            a.title === b.title &&
+            a.subject === b.subject &&
+            a.course_level === b.course_level &&
+            a.year === b.year &&
+            a.source === b.source &&
+            a.visibility === b.visibility &&
+            a.duration_minutes === b.duration_minutes;
+    }
+
     async function save() {
         const isPublishing = paper.visibility === "private" &&
             visibility === "public";
@@ -112,6 +127,7 @@ export const PaperSettings = memo(function PaperSettings(
             year: year ? Number(year) : undefined,
             source: (source as PaperSource) || undefined,
             visibility,
+            duration_minutes: duration ? Number(duration) : undefined,
             updated_at: new Date().toISOString(),
         };
 
@@ -224,7 +240,7 @@ export const PaperSettings = memo(function PaperSettings(
                                 )}
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-3 gap-4">
                                 <Field>
                                     <FieldLabel htmlFor="settings-year">
                                         Year
@@ -237,6 +253,21 @@ export const PaperSettings = memo(function PaperSettings(
                                         onChange={(e) =>
                                             setYear(e.target.value)}
                                         placeholder="2026"
+                                    />
+                                </Field>
+                                <Field>
+                                    <FieldLabel htmlFor="settings-duration">
+                                        Duration (min)
+                                    </FieldLabel>
+                                    <Input
+                                        id="settings-duration"
+                                        type="number"
+                                        min={1}
+                                        max={600}
+                                        value={duration}
+                                        onChange={(e) =>
+                                            setDuration(e.target.value)}
+                                        placeholder="180"
                                     />
                                 </Field>
                                 <Field>
@@ -414,5 +445,4 @@ export const PaperSettings = memo(function PaperSettings(
 }, (prev, next) =>
     sameSettingsPaper(prev.paper, next.paper) &&
     prev.onSave === next.onSave &&
-    prev.onOpenChange === next.onOpenChange
-);
+    prev.onOpenChange === next.onOpenChange);

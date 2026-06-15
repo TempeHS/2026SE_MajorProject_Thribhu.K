@@ -31,6 +31,7 @@ import {
     CloudOff,
     CloudUpload,
     Download,
+    Glasses,
     Loader2,
     Plus,
     Shell,
@@ -65,6 +66,7 @@ import {
 import { AdminSidebar } from "@/components/admin-sidebar";
 import { Takendown } from "./errors/Takendown";
 import { GenericError } from "./errors/GenericError";
+import { FocusMode } from "@/components/focus-mode";
 
 const EDITOR_MIN_WIDTH = 384;
 const EDITOR_DEFAULT_WIDTH = 448;
@@ -107,6 +109,8 @@ export default function PaperEditor() {
     const saveTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
 
     const [takenDown, setTakenDown] = useState(false);
+
+    const [focusMode, setFocusMode] = useState(false);
 
     useEffect(() => {
         function handleKeyDown(e: KeyboardEvent) {
@@ -412,6 +416,8 @@ export default function PaperEditor() {
         <>
             <NavBar />
             <main className="mx-auto w-full max-w-3xl px-6 py-8">
+                {/** paper toolbar */}
+
                 <div className="mb-6 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Button
@@ -446,6 +452,15 @@ export default function PaperEditor() {
                                 onSave={handleSettingsSave}
                             />
                         )}
+
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setFocusMode(true)}
+                            aria-label="Focus mode"
+                        >
+                            <Glasses className="size-4" />
+                        </Button>
 
                         {isOwner && (
                             <Popover
@@ -671,6 +686,12 @@ export default function PaperEditor() {
                 paperId={id!}
                 isTakenDown={paper.visibility === "removed"}
             />
+            {focusMode && paper && (
+                <FocusMode
+                    paper={paper}
+                    onExit={() => setFocusMode(false)}
+                />
+            )}
         </>
     );
 }

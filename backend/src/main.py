@@ -135,7 +135,7 @@ def set_security_headers(response):
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data: blob:; "
             "font-src 'self' data:; "
-            "connect-src 'self'"
+            f"connect-src 'self' {settings.SUPABASE_URL}" if settings.SUPABASE_URL else "connect-src 'self'"
         )
 
     if settings.PRODUCTION:

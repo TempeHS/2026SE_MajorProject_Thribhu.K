@@ -85,6 +85,8 @@ def _paper_read_for_viewer(session, paper: PaperDB, user_id: str | None):
                 source_removed=source_removed and owner_viewer and not admin_viewer,
             )
         )
+    
+    visible_questions.sort(key=lambda q: q.number)
 
     if admin_viewer or owner_viewer:
         return paper_db_to_read(paper, questions=visible_questions)
@@ -311,7 +313,7 @@ def get_paper(paper_id):
                 _paper_read_for_viewer(session, paper, str(user_id)).model_dump(mode="json")
             )
 
-        # Removed papers — tell the user it's gone (owner included)
+        # Removed papers, tell the user it's gone (owner included)
         if paper.visibility == "removed":
             return _removed_response()
 

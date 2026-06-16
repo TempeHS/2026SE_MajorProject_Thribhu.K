@@ -280,7 +280,7 @@ export default function Settings() {
                                         <img
                                             src={enrollData.qr}
                                             alt="TOTP QR Code"
-                                            className="w-48 h-48"
+                                            className="w-48 min-w-48 h-48 min-h-48 aspect-square object-contain"
                                         />
                                     </Field>
                                     <Field>

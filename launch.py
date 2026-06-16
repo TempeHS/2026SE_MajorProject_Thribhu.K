@@ -15,11 +15,15 @@
 import os
 import platform
 import shutil
+import socket
 import subprocess
 import sys
+import tarfile
 import tempfile
 import threading
 import time
+import urllib.request
+import zipfile
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime
@@ -52,6 +56,16 @@ FRONTEND = os.path.join(ROOT, "frontend")
 BACKEND = os.path.join(ROOT, "backend")
 PAPER_UTILS = os.path.join(ROOT, "tppr-paper-utils")
 UV_CACHE_DIR = os.path.join(ROOT, ".uv-cache")
+GCLOUD_CACHE_DIR = os.path.join(ROOT, ".gcloud-sdk")
+GCLOUD_SDK_DIR = os.path.join(GCLOUD_CACHE_DIR, "google-cloud-sdk")
+POSTGRES_CACHE_DIR = os.path.join(ROOT, ".postgresql")
+POSTGRES_INSTALL_DIR = os.path.join(POSTGRES_CACHE_DIR, "pgsql")
+POSTGRES_DATA_DIR = os.path.join(POSTGRES_CACHE_DIR, "data")
+POSTGRES_LOG_FILE = os.path.join(POSTGRES_CACHE_DIR, "postgresql.log")
+LOCAL_POSTGRES_USER = os.getenv("LOCAL_POSTGRES_USER", "tppr")
+LOCAL_POSTGRES_DB = os.getenv("LOCAL_POSTGRES_DB", "tppr")
+LOCAL_POSTGRES_HOST = "127.0.0.1"
+LOCAL_POSTGRES_PORT = int(os.getenv("LOCAL_POSTGRES_PORT", "55432"))
 
 console = Console()
 
@@ -121,6 +135,374 @@ def find_command(name):
     return shutil.which(name)
 
 
+def cached_gcloud_command():
+    executable = "gcloud.cmd" if platform.system().lower() == "windows" else "gcloud"
+    path = os.path.join(GCLOUD_SDK_DIR, "bin", executable)
+    return path if os.path.exists(path) else None
+
+
+def gcloud_archive_name():
+    system = platform.system().lower()
+    machine = platform.machine().lower()
+
+    if system == "windows" and machine in {"amd64", "x86_64"}:
+        return "google-cloud-cli-windows-x86_64.zip"
+    if system == "linux" and machine in {"amd64", "x86_64"}:
+        return "google-cloud-cli-linux-x86_64.tar.gz"
+    if system == "darwin" and machine in {"amd64", "x86_64"}:
+        return "google-cloud-cli-darwin-x86_64.tar.gz"
+    if system == "darwin" and machine in {"arm64", "aarch64"}:
+        return "google-cloud-cli-darwin-arm.tar.gz"
+
+    fatal(
+        "Could not install Google Cloud CLI automatically",
+        f"Unsupported platform for cached gcloud install: {system}/{machine}.",
+    )
+
+
+def download_file(url, target):
+    tmp_target = f"{target}.tmp"
+    try:
+        with urllib.request.urlopen(url, timeout=60) as response:
+            with open(tmp_target, "wb") as file:
+                shutil.copyfileobj(response, file)
+        os.replace(tmp_target, target)
+    finally:
+        if os.path.exists(tmp_target):
+            os.unlink(tmp_target)
+
+
+def install_cached_gcloud():
+    cached = cached_gcloud_command()
+    if cached:
+        return cached
+
+    archive_name = gcloud_archive_name()
+    archive_url = (
+        "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/"
+        f"{archive_name}"
+    )
+    archive_path = os.path.join(GCLOUD_CACHE_DIR, archive_name)
+    os.makedirs(GCLOUD_CACHE_DIR, exist_ok=True)
+
+    if not os.path.exists(archive_path):
+        log("Downloading Google Cloud CLI for cached deploy tooling")
+        try:
+            download_file(archive_url, archive_path)
+        except OSError as e:
+            fatal(
+                "Could not download Google Cloud CLI",
+                f"{archive_url}\n\n{e}",
+            )
+    else:
+        log("Using cached Google Cloud CLI archive")
+
+    log("Installing cached Google Cloud CLI")
+    with tempfile.TemporaryDirectory(prefix="gcloud-extract-", dir=GCLOUD_CACHE_DIR) as extract_dir:
+        try:
+            shutil.unpack_archive(archive_path, extract_dir)
+        except (shutil.ReadError, tarfile.TarError, zipfile.BadZipFile) as e:
+            fatal("Could not extract Google Cloud CLI archive", str(e))
+
+        extracted_sdk = os.path.join(extract_dir, "google-cloud-sdk")
+        if not os.path.isdir(extracted_sdk):
+            fatal(
+                "Could not install Google Cloud CLI",
+                "The downloaded archive did not contain google-cloud-sdk.",
+            )
+
+        if os.path.exists(GCLOUD_SDK_DIR):
+            shutil.rmtree(GCLOUD_SDK_DIR)
+        shutil.move(extracted_sdk, GCLOUD_SDK_DIR)
+
+    cached = cached_gcloud_command()
+    if not cached:
+        fatal(
+            "Could not install Google Cloud CLI",
+            "The cached SDK is missing the gcloud executable.",
+        )
+    return cached
+
+
+def find_or_install_gcloud():
+    gcloud = find_command("gcloud")
+    if gcloud:
+        return gcloud
+
+    cached = cached_gcloud_command()
+    if cached:
+        return cached
+
+    warn("gcloud was not found on PATH; installing a cached Google Cloud CLI.")
+    return install_cached_gcloud()
+
+
+def postgres_executable(name):
+    executable = f"{name}.exe" if platform.system().lower() == "windows" else name
+    cached = os.path.join(POSTGRES_INSTALL_DIR, "bin", executable)
+    if os.path.exists(cached):
+        return cached
+
+    if platform.system().lower() == "windows":
+        path = shutil.which(f"{name}.exe") or shutil.which(name)
+    else:
+        path = shutil.which(name)
+    return path
+
+
+def cached_postgres_available():
+    return all(
+        os.path.exists(
+            os.path.join(
+                POSTGRES_INSTALL_DIR,
+                "bin",
+                f"{name}.exe" if platform.system().lower() == "windows" else name,
+            )
+        )
+        for name in ("postgres", "initdb", "psql", "createdb")
+    )
+
+
+def postgres_archive_name():
+    system = platform.system().lower()
+    machine = platform.machine().lower()
+
+    if system == "windows" and machine in {"amd64", "x86_64"}:
+        return "postgresql-17.5-1-windows-x64-binaries.zip"
+
+    fatal(
+        "Could not install PostgreSQL automatically",
+        f"Unsupported platform for cached PostgreSQL install: {system}/{machine}.",
+    )
+
+
+def install_cached_postgres():
+    if cached_postgres_available():
+        return POSTGRES_INSTALL_DIR
+
+    archive_name = postgres_archive_name()
+    archive_url = f"https://get.enterprisedb.com/postgresql/{archive_name}"
+    archive_path = os.path.join(POSTGRES_CACHE_DIR, archive_name)
+    os.makedirs(POSTGRES_CACHE_DIR, exist_ok=True)
+
+    if not os.path.exists(archive_path):
+        log("Downloading PostgreSQL for local development")
+        try:
+            download_file(archive_url, archive_path)
+        except OSError as e:
+            fatal("Could not download PostgreSQL", f"{archive_url}\n\n{e}")
+    else:
+        log("Using cached PostgreSQL archive")
+
+    log("Installing cached PostgreSQL")
+    with tempfile.TemporaryDirectory(prefix="postgres-extract-", dir=POSTGRES_CACHE_DIR) as extract_dir:
+        try:
+            shutil.unpack_archive(archive_path, extract_dir)
+        except (shutil.ReadError, tarfile.TarError, zipfile.BadZipFile) as e:
+            fatal("Could not extract PostgreSQL archive", str(e))
+
+        extracted = os.path.join(extract_dir, "pgsql")
+        if not os.path.isdir(extracted):
+            fatal(
+                "Could not install PostgreSQL",
+                "The downloaded archive did not contain pgsql.",
+            )
+
+        if os.path.exists(POSTGRES_INSTALL_DIR):
+            shutil.rmtree(POSTGRES_INSTALL_DIR)
+        shutil.move(extracted, POSTGRES_INSTALL_DIR)
+
+    if not cached_postgres_available():
+        fatal(
+            "Could not install PostgreSQL",
+            "The cached PostgreSQL install is missing required executables.",
+        )
+    return POSTGRES_INSTALL_DIR
+
+
+def find_or_install_postgres():
+    required = ("postgres", "initdb", "psql", "createdb")
+    if all(postgres_executable(name) for name in required):
+        return os.path.dirname(postgres_executable("postgres"))
+
+    warn("PostgreSQL was not found on PATH; installing cached PostgreSQL.")
+    install_cached_postgres()
+    return os.path.join(POSTGRES_INSTALL_DIR, "bin")
+
+
+def local_database_url(port=LOCAL_POSTGRES_PORT):
+    return (
+        f"postgresql+psycopg2://{LOCAL_POSTGRES_USER}@"
+        f"{LOCAL_POSTGRES_HOST}:{port}/{LOCAL_POSTGRES_DB}"
+    )
+
+
+def wait_for_tcp(host, port, timeout=10):
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            with socket.create_connection((host, port), timeout=1):
+                return True
+        except OSError:
+            time.sleep(0.2)
+    return False
+
+
+def run_postgres_command(args, *, env=None, check=True, capture_output=True):
+    proc = subprocess.run(
+        args,
+        cwd=ROOT,
+        env=env,
+        text=True,
+        capture_output=capture_output,
+    )
+    if check and proc.returncode != 0:
+        output = "\n".join(part for part in [proc.stdout, proc.stderr] if part).strip()
+        fatal("PostgreSQL command failed", output or command_text(args))
+    return proc
+
+
+def postgres_env():
+    env = os.environ.copy()
+    env["PGCONNECT_TIMEOUT"] = "2"
+    env["PGUSER"] = LOCAL_POSTGRES_USER
+    return env
+
+
+def ensure_postgres_cluster(postgres_bin):
+    if os.path.exists(os.path.join(POSTGRES_DATA_DIR, "PG_VERSION")):
+        return
+
+    initdb = os.path.join(
+        postgres_bin,
+        "initdb.exe" if platform.system().lower() == "windows" else "initdb",
+    )
+    os.makedirs(POSTGRES_CACHE_DIR, exist_ok=True)
+    run_postgres_command(
+        [
+            initdb,
+            "-D",
+            POSTGRES_DATA_DIR,
+            "-U",
+            LOCAL_POSTGRES_USER,
+            "--auth=trust",
+            "--encoding=UTF8",
+        ],
+        env=postgres_env(),
+    )
+
+
+def psql_command(postgres_bin, port, sql, database="postgres"):
+    psql = os.path.join(
+        postgres_bin,
+        "psql.exe" if platform.system().lower() == "windows" else "psql",
+    )
+    return run_postgres_command(
+        [
+            psql,
+            "-h",
+            LOCAL_POSTGRES_HOST,
+            "-p",
+            str(port),
+            "-U",
+            LOCAL_POSTGRES_USER,
+            "-d",
+            database,
+            "-tAc",
+            sql,
+        ],
+        env=postgres_env(),
+    )
+
+
+def ensure_local_database(postgres_bin, port):
+    exists = psql_command(
+        postgres_bin,
+        port,
+        f"SELECT 1 FROM pg_database WHERE datname = '{LOCAL_POSTGRES_DB}'",
+    ).stdout.strip()
+    if exists == "1":
+        return
+
+    createdb = os.path.join(
+        postgres_bin,
+        "createdb.exe" if platform.system().lower() == "windows" else "createdb",
+    )
+    run_postgres_command(
+        [
+            createdb,
+            "-h",
+            LOCAL_POSTGRES_HOST,
+            "-p",
+            str(port),
+            "-U",
+            LOCAL_POSTGRES_USER,
+            LOCAL_POSTGRES_DB,
+        ],
+        env=postgres_env(),
+    )
+
+
+@dataclass
+class LocalPostgres:
+    process: subprocess.Popen | None
+    database_url: str
+    port: int
+
+
+def start_local_postgres(postgres_bin):
+    ensure_postgres_cluster(postgres_bin)
+
+    port = LOCAL_POSTGRES_PORT
+    postgres = os.path.join(
+        postgres_bin,
+        "postgres.exe" if platform.system().lower() == "windows" else "postgres",
+    )
+
+    if wait_for_tcp(LOCAL_POSTGRES_HOST, port, timeout=0.5):
+        ensure_local_database(postgres_bin, port)
+        return LocalPostgres(None, local_database_url(port), port)
+
+    os.makedirs(POSTGRES_CACHE_DIR, exist_ok=True)
+    log(f"Starting local PostgreSQL on {LOCAL_POSTGRES_HOST}:{port}")
+    log_file = open(POSTGRES_LOG_FILE, "a", encoding="utf-8")
+    try:
+        proc = subprocess.Popen(
+            [
+                postgres,
+                "-D",
+                POSTGRES_DATA_DIR,
+                "-h",
+                LOCAL_POSTGRES_HOST,
+                "-p",
+                str(port),
+            ],
+            cwd=ROOT,
+            env=postgres_env(),
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+    finally:
+        log_file.close()
+
+    if not wait_for_tcp(LOCAL_POSTGRES_HOST, port, timeout=20):
+        proc.terminate()
+        fatal(
+            "Local PostgreSQL did not start",
+            f"See {POSTGRES_LOG_FILE} for details.",
+        )
+
+    if proc.poll() is not None:
+        fatal(
+            "Local PostgreSQL exited during startup",
+            f"See {POSTGRES_LOG_FILE} for details.",
+        )
+
+    ensure_local_database(postgres_bin, port)
+    return LocalPostgres(proc, local_database_url(port), port)
+
+
 @dataclass
 class DependencyStep:
     name: str
@@ -181,37 +563,12 @@ class DependencyTUI:
 
 
 def check_database_connection():
-    """Check configured database, falling back to SQLite for local development."""
-    from dotenv import load_dotenv
-    from urllib.parse import urlparse
-    load_dotenv()
-
-    db_url = (os.getenv("DATABASE_URL") or "").strip()
-    if not db_url or db_url == "your-postgres-database":
-        return ("SQLite", True, os.path.join(ROOT, "database.db"))
-
-    parsed = urlparse(db_url)
-    if parsed.scheme.startswith("sqlite"):
-        return ("SQLite", True, parsed.path or db_url)
-
-    if parsed.scheme not in {"postgres", "postgresql", "postgresql+psycopg2"}:
-        warn("DATABASE_URL is set but is not a recognised SQLite or PostgreSQL URL.")
-        return ("Database", False, parsed.scheme or db_url)
-
-    try:
-        import socket
-        host = parsed.hostname or "localhost"
-        port = parsed.port or 5432
-
-        sock = socket.create_connection((host, port), timeout=5)
-        sock.close()
-        return ("PostgreSQL", True, f"{host}:{port}")
-    except OSError:
-        warn(
-            f"Cannot reach PostgreSQL at {host}:{port}. "
-            "Using local SQLite fallback for development."
-        )
-        return ("SQLite fallback", True, os.path.join(ROOT, "database.db"))
+    """Report the PostgreSQL database that launch.py manages for local runs."""
+    return (
+        "Local PostgreSQL",
+        True,
+        f"{LOCAL_POSTGRES_HOST}:{LOCAL_POSTGRES_PORT}/{LOCAL_POSTGRES_DB}",
+    )
 
 
 def check_dependencies():
@@ -224,6 +581,10 @@ def check_dependencies():
     bun = find_command("bun")
     if not bun:
         missing.append("bun")
+
+    postgres_bin = None
+    if not missing:
+        postgres_bin = find_or_install_postgres()
 
     runner = bun
     runner_name = "bun"
@@ -246,6 +607,11 @@ def check_dependencies():
         "[green]ready[/]" if db_reachable else "[red]invalid[/]",
         db_detail,
     )
+    table.add_row(
+        "PostgreSQL tools",
+        "[green]found[/]" if postgres_bin else "[red]missing[/]",
+        postgres_bin or "-",
+    )
 
     console.print(table)
 
@@ -258,13 +624,14 @@ def check_dependencies():
     if not db_reachable:
         fatal(
             "Database is not configured correctly",
-            "Use SQLite by leaving DATABASE_URL unset, or set DATABASE_URL to a valid PostgreSQL URL.",
+            "launch.py should manage a local PostgreSQL database for development.",
         )
 
     return {
         "uv": uv,
         "js": runner,
         "js_name": runner_name,
+        "postgres_bin": postgres_bin,
     }
 
 
@@ -365,10 +732,17 @@ def run_capture(args, cwd, label):
     return proc.stdout.strip()
 
 
-def gcloud_config_value(gcloud, key):
+def gcloud_process_env():
+    env = os.environ.copy()
+    env["CLOUDSDK_PYTHON"] = sys.executable
+    return env
+
+
+def gcloud_config_value(gcloud, key, env=None):
     proc = subprocess.run(
         [gcloud, "config", "get-value", key],
         cwd=ROOT,
+        env=env,
         text=True,
         capture_output=True,
     )
@@ -427,10 +801,17 @@ def build_supabase_database_url():
 
 
 def gcloud_env_vars_arg(env_vars):
+    pairs = [f"{key}={value}" for key, value in env_vars.items()]
+    if all("," not in pair for pair in pairs):
+        return ",".join(pairs)
+
+    # gcloud.cmd runs through cmd.exe on Windows, so delimiters must avoid
+    # shell metacharacters such as |, &, <, >, %, and ^.
+    delimiter_candidates = ("~", "#", ";", "!")
     delimiter = next(
         (
             candidate
-            for candidate in ("@", "|", "~", "%", ";", ":")
+            for candidate in delimiter_candidates
             if all(candidate not in value for value in env_vars.values())
         ),
         None,
@@ -440,27 +821,75 @@ def gcloud_env_vars_arg(env_vars):
             "Could not encode Cloud Run environment variables",
             "One of the database environment values contains every supported gcloud delimiter.",
         )
-    pairs = [f"{key}={value}" for key, value in env_vars.items()]
     return f"^{delimiter}^" + delimiter.join(pairs)
 
 
 def cloud_run_database_env():
     database_url = build_supabase_database_url()
-    env_vars = {"DATABASE_URL": database_url}
-    for key in ("DB_USER", "DB_PASSWORD", "DB_HOST", "DB_PORT", "DB_NAME", "DB_SSLMODE"):
-        value = os.getenv(key)
-        if value:
-            env_vars[key] = value.strip() if key != "DB_PASSWORD" else value
+    supabase_url = (
+        os.getenv("SUPABASE_URL")
+        or os.getenv("VITE_SUPABASE_URL")
+        or ""
+    ).strip().rstrip("/")
+    if not supabase_url:
+        fatal(
+            "Supabase URL is missing",
+            "Set SUPABASE_URL or VITE_SUPABASE_URL in .env before deploying.",
+        )
+
+    env_vars = {
+        "DATABASE_URL": database_url,
+        "SUPABASE_URL": supabase_url,
+        "VITE_SUPABASE_URL": supabase_url,
+    }
+    anon_key = (os.getenv("VITE_SUPABASE_ANON_KEY") or "").strip()
+    if anon_key:
+        env_vars["VITE_SUPABASE_ANON_KEY"] = anon_key
     return env_vars
+
+
+def remove_cloud_run_env_vars(gcloud, service, region, project, names, env):
+    for flag in ("--remove-env-vars", "--remove-secrets"):
+        args = [
+            gcloud,
+            "run",
+            "services",
+            "update",
+            service,
+            "--region",
+            region,
+            flag,
+            ",".join(names),
+            "--quiet",
+        ]
+        if project:
+            args.extend(["--project", project])
+
+        proc = subprocess.run(
+            args,
+            cwd=ROOT,
+            env=env,
+            text=True,
+            capture_output=True,
+        )
+        if proc.returncode != 0:
+            output = "\n".join(part for part in [proc.stdout, proc.stderr] if part).strip()
+            if "does not exist" not in output and "not found" not in output.lower():
+                raise subprocess.CalledProcessError(
+                    proc.returncode,
+                    args,
+                    output=proc.stdout,
+                    stderr=proc.stderr,
+                )
 
 
 def check_deploy_tools():
     git = find_command("git")
-    gcloud = find_command("gcloud")
+    gcloud = find_or_install_gcloud()
     bun = find_command("bun")
     missing = [
         name
-        for name, cmd in [("git", git), ("gcloud", gcloud), ("bun", bun)]
+        for name, cmd in [("git", git), ("bun", bun)]
         if not cmd
     ]
     if missing:
@@ -468,7 +897,13 @@ def check_deploy_tools():
             "Missing deploy tools: " + ", ".join(missing),
             "Install the missing command(s), then run `uv run launch.py --deploy gcp` again.",
         )
-    return {"git": git, "gcloud": gcloud, "js": bun, "js_name": "bun"}
+    return {
+        "git": git,
+        "gcloud": gcloud,
+        "gcloud_env": gcloud_process_env(),
+        "js": bun,
+        "js_name": "bun",
+    }
 
 
 def copy_latest_commit(git, target_dir):
@@ -494,7 +929,16 @@ def copy_latest_commit(git, target_dir):
 
 
 def copy_deploy_source(target_dir):
-    ignored_dirs = {".git", ".venv", ".uv-cache", "node_modules", "__pycache__", "dist"}
+    ignored_dirs = {
+        ".git",
+        ".venv",
+        ".uv-cache",
+        ".gcloud-sdk",
+        ".postgresql",
+        "node_modules",
+        "__pycache__",
+        "dist",
+    }
     ignored_files = {".env", "database.db"}
 
     def ignore(_dir, names):
@@ -512,6 +956,7 @@ def run_gcp_deploy():
     tools = check_deploy_tools()
     git = tools["git"]
     gcloud = tools["gcloud"]
+    gcloud_env = tools["gcloud_env"]
     js = tools["js"]
     database_env = cloud_run_database_env()
 
@@ -537,18 +982,29 @@ def run_gcp_deploy():
     region = (
         os.getenv("GCP_REGION")
         or os.getenv("CLOUD_RUN_REGION")
-        or gcloud_config_value(gcloud, "run/region")
-        or gcloud_config_value(gcloud, "compute/region")
+        or gcloud_config_value(gcloud, "run/region", env=gcloud_env)
+        or gcloud_config_value(gcloud, "compute/region", env=gcloud_env)
         or "australia-southeast1"
     )
-    project = os.getenv("GCP_PROJECT") or gcloud_config_value(gcloud, "core/project")
+    project = (
+        os.getenv("GCP_PROJECT")
+        or os.getenv("GOOGLE_CLOUD_PROJECT")
+        or os.getenv("GCLOUD_PROJECT")
+        or gcloud_config_value(gcloud, "core/project", env=gcloud_env)
+    )
+    if not project:
+        fatal(
+            "GCP project is not configured",
+            "Set GCP_PROJECT in .env or run "
+            "`gcloud config set project YOUR_PROJECT_ID`, then deploy again.",
+        )
 
     table = Table(title="GCP deploy", box=box.SIMPLE_HEAVY)
     table.add_column("Setting", style="bold")
     table.add_column("Value", overflow="fold")
     table.add_row("Service", service)
     table.add_row("Region", region)
-    table.add_row("Project", project or "(gcloud default)")
+    table.add_row("Project", project)
     table.add_row("Database", os.getenv("DB_HOST", "(DATABASE_URL)"))
     table.add_row("Branch", branch)
     table.add_row("Commit", commit)
@@ -597,7 +1053,12 @@ def run_gcp_deploy():
         if project:
             deploy_args.extend(["--project", project])
 
-        run_streamed(deploy_args, ROOT, f"Deploying {service} to Cloud Run")
+        run_streamed(
+            deploy_args,
+            ROOT,
+            f"Deploying {service} to Cloud Run",
+            env=gcloud_env,
+        )
 
 
 def ensure_python_dependencies(tools, skip_install=False, tui=None, live=None):
@@ -752,6 +1213,8 @@ def run_backend(tools, api_only=False, capture_output=False, log_start=True):
     os.makedirs(UV_CACHE_DIR, exist_ok=True)
     env = os.environ.copy()
     env["UV_CACHE_DIR"] = UV_CACHE_DIR
+    if tools.get("database_url"):
+        env["DATABASE_URL"] = tools["database_url"]
 
     args = [tools["uv"], "run", "src/main.py"]
     if api_only:
@@ -809,7 +1272,14 @@ class FileWatcher:
         for watch_dir in self.watch_dirs:
             for dirpath, _, filenames in os.walk(watch_dir):
                 basename = os.path.basename(dirpath)
-                if basename in ("node_modules", "__pycache__", ".git", "dist", ".venv"):
+                if basename in (
+                    "node_modules",
+                    "__pycache__",
+                    ".git",
+                    "dist",
+                    ".venv",
+                    ".postgresql",
+                ):
                     continue
                 for f in filenames:
                     if any(f.endswith(ext) for ext in self.extensions):
@@ -1160,12 +1630,19 @@ def main():
     split_mode = "--build" not in sys.argv
     skip_install = "--skip-install" in sys.argv
     watchers = []
+    local_postgres = None
 
     render_header(split_mode)
 
     try:
         tools = check_dependencies()
         prepare_dependencies(tools, skip_install=skip_install)
+        local_postgres = start_local_postgres(tools["postgres_bin"])
+        tools["database_url"] = local_postgres.database_url
+        success(
+            "Local PostgreSQL ready at "
+            f"{LOCAL_POSTGRES_HOST}:{local_postgres.port}/{LOCAL_POSTGRES_DB}"
+        )
 
         if split_mode:
             run_split_mode(tools, watchers)
@@ -1180,6 +1657,8 @@ def main():
     except Exception as exc:
         fatal(str(exc))
     finally:
+        if local_postgres and local_postgres.process:
+            terminate_process(local_postgres.process)
         for watcher in watchers:
             watcher.stop()
         success("Launcher cleanup complete")

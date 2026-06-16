@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useAuth } from "@/api/auth";
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -26,7 +25,6 @@ export function LoginForm(
   { className, ...props }: React.ComponentProps<"div">,
 ) {
   const [error, setError] = useState("");
-  const { login } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTo = safeRedirectPath(searchParams.get("redirect"));
@@ -42,7 +40,7 @@ export function LoginForm(
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
-    const { data, error: signInError } = await supabase.auth.signInWithPassword(
+    const { error: signInError } = await supabase.auth.signInWithPassword(
       { email, password },
     );
     if (signInError) {

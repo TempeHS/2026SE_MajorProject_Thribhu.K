@@ -437,11 +437,6 @@ def update_paper(paper_id):
         session.refresh(paper)
         return jsonify(paper_db_to_read(paper).model_dump(mode="json")), 200
 
-        session.add(paper)
-        session.commit()
-        session.refresh(paper)
-        return jsonify(paper_db_to_read(paper).model_dump(mode="json")), 200
-
 @q_bp.route("/api/papers/<string:paper_id>", methods=["DELETE"])
 @supabase_auth_required()
 def delete_paper(paper_id):
@@ -455,6 +450,12 @@ def delete_paper(paper_id):
             return _removed_response()
         if paper.author_id != str(user_id):
             return jsonify({"message": "Forbidden"}), 403
+
+        for question in paper.questions:
+            session.delete(question)
+        for outcome in paper.outcomes:
+            session.delete(outcome)
+        session.flush()
 
         session.delete(paper)
         session.commit()

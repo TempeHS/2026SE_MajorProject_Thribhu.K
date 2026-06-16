@@ -145,6 +145,7 @@ SUPABASE_JWT_ISSUER = (
     or (f"{SUPABASE_URL}/auth/v1" if SUPABASE_URL else "")
 )
 SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")
+SUPABASE_JWT_AUDIENCE = os.getenv("SUPABASE_JWT_AUDIENCE", "authenticated").strip()
 if PRODUCTION and not SUPABASE_JWKS_URL and not SUPABASE_JWT_SECRET:
     raise RuntimeError(
         "SUPABASE_URL or SUPABASE_JWKS_URL must be set when PRODUCTION=1"

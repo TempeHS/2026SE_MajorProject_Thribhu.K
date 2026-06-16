@@ -3,10 +3,13 @@ from logging import Logger
 import re
 from typing import Optional
 
-from sqlalchemy import or_, text
+from sqlalchemy import or_, update
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.exc import StaleDataError
 from sqlmodel import Field, Session, SQLModel, select
 
-from questions.db import DATABASE_URL, engine
+from questions.db import engine
+from questions.types import AssetDB, PaperDB, QuestionDB
 
 
 class UserDB(SQLModel, table=True):
@@ -25,65 +28,8 @@ class UserDB(SQLModel, table=True):
 class AuthenticationDB:
     def prepare(self, log: Logger):
         log.info("Preparing auth database tables")
-        self._migrate_sqlite_user_ids_to_text(log)
         SQLModel.metadata.create_all(engine)
         log.info("Users table ready")
-
-    def _migrate_sqlite_user_ids_to_text(self, log: Logger) -> None:
-        if not DATABASE_URL.startswith("sqlite:///"):
-            return
-
-        with engine.begin() as connection:
-            table_exists = connection.execute(
-                text(
-                    "SELECT name FROM sqlite_master "
-                    "WHERE type = 'table' AND name = 'users'"
-                )
-            ).first()
-            if not table_exists:
-                return
-
-            columns = connection.execute(text("PRAGMA table_info(users)")).all()
-            user_id_column = next(
-                (column for column in columns if column[1] == "user_id"),
-                None,
-            )
-            if not user_id_column or "INT" not in str(user_id_column[2]).upper():
-                return
-
-            log.info("Migrating users.user_id from integer to text for Supabase IDs")
-            connection.execute(text("ALTER TABLE users RENAME TO users_legacy_int_id"))
-
-        SQLModel.metadata.create_all(engine)
-
-        with engine.begin() as connection:
-            connection.execute(
-                text(
-                    """
-                    INSERT INTO users (
-                        user_id,
-                        username,
-                        email,
-                        password_hash,
-                        totp_secret,
-                        totp_enabled,
-                        created_at,
-                        last_login
-                    )
-                    SELECT
-                        CAST(user_id AS TEXT),
-                        username,
-                        email,
-                        password_hash,
-                        totp_secret,
-                        totp_enabled,
-                        created_at,
-                        last_login
-                    FROM users_legacy_int_id
-                    """
-                )
-            )
-            connection.execute(text("DROP TABLE users_legacy_int_id"))
 
     def get_user_by_email(self, email: str) -> Optional[dict]:
         with Session(engine) as session:
@@ -214,8 +160,49 @@ class AuthenticationDB:
         metadata: dict | None = None,
     ) -> dict:
         metadata = metadata or {}
+        for attempt in range(2):
+            try:
+                return self._sync_supabase_user_once(
+                    user_id=user_id,
+                    email=email,
+                    metadata=metadata,
+                )
+            except (IntegrityError, StaleDataError):
+                if attempt == 1:
+                    raise
+        raise RuntimeError("Unable to sync Supabase user")
+
+    def _sync_supabase_user_once(
+        self,
+        *,
+        user_id: str,
+        email: str,
+        metadata: dict,
+    ) -> dict:
         with Session(engine) as session:
             user = session.get(UserDB, user_id)
+            user_by_email = session.exec(
+                select(UserDB).where(UserDB.email == email)
+            ).first()
+
+            if user_by_email and user_by_email.user_id != user_id:
+                if user:
+                    self._reassign_owned_records(
+                        session,
+                        old_user_id=user_by_email.user_id,
+                        new_user_id=user_id,
+                    )
+                    session.delete(user_by_email)
+                    session.flush()
+                else:
+                    self._reassign_owned_records(
+                        session,
+                        old_user_id=user_by_email.user_id,
+                        new_user_id=user_id,
+                    )
+                    user_by_email.user_id = user_id
+                    user = user_by_email
+
             username = self._unique_username(
                 session,
                 self._preferred_username(email, metadata, user_id),
@@ -240,6 +227,31 @@ class AuthenticationDB:
             session.commit()
             session.refresh(user)
             return user.model_dump()
+
+    def _reassign_owned_records(
+        self,
+        session: Session,
+        *,
+        old_user_id: str,
+        new_user_id: str,
+    ) -> None:
+        if old_user_id == new_user_id:
+            return
+        session.exec(
+            update(PaperDB)
+            .where(PaperDB.author_id == old_user_id)
+            .values(author_id=new_user_id)
+        )
+        session.exec(
+            update(QuestionDB)
+            .where(QuestionDB.author_id == old_user_id)
+            .values(author_id=new_user_id)
+        )
+        session.exec(
+            update(AssetDB)
+            .where(AssetDB.uploader_id == old_user_id)
+            .values(uploader_id=new_user_id)
+        )
 
     def _preferred_username(
         self,

@@ -1,29 +1,58 @@
 import os
 from logging import Logger
+from urllib.parse import quote_plus, urlencode
 
-from sqlmodel import Session, SQLModel, create_engine, text
+from sqlmodel import Session, SQLModel, create_engine
 from settings import PRODUCTION, env_flag
 
 
 def _configured_database_url() -> str:
-    # Support a full DATABASE_URL if provided
     database_url = os.getenv("DATABASE_URL", "").strip()
-    if database_url:
-        return database_url
+    if not database_url:
+        database_url = _database_url_from_parts()
+    if not (
+        database_url.startswith("postgresql://")
+        or database_url.startswith("postgresql+psycopg2://")
+    ):
+        raise RuntimeError("DATABASE_URL must be a PostgreSQL connection URL")
+    return database_url
 
-    # Otherwise build from individual vars
-    user = os.getenv("DB_USER")
-    password = os.getenv("DB_PASSWORD")
-    host = os.getenv("DB_HOST")
-    port = os.getenv("DB_PORT", "5432")
-    dbname = os.getenv("DB_NAME")
 
-    if not all([user, password, host, dbname]):
+def _database_url_from_parts() -> str:
+    user = os.getenv("DB_USER", "").strip()
+    password = os.getenv("DB_PASSWORD", "")
+    host = os.getenv("DB_HOST", "").strip()
+    port = os.getenv("DB_PORT", "5432").strip()
+    name = os.getenv("DB_NAME", "").strip()
+
+    missing = [
+        key
+        for key, value in {
+            "DB_USER": user,
+            "DB_PASSWORD": password,
+            "DB_HOST": host,
+            "DB_NAME": name,
+        }.items()
+        if not value
+    ]
+    if missing:
         raise RuntimeError(
-            "Database not configured. Set DATABASE_URL or DB_USER, DB_PASSWORD, DB_HOST, DB_NAME in your .env"
+            "Database not configured. Set DATABASE_URL or "
+            f"{', '.join(missing)} in your .env"
         )
 
-    return f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}?sslmode=require"
+    auth = f"{quote_plus(user)}:{quote_plus(password)}"
+    host_part = host if not port else f"{host}:{port}"
+    query_options: dict[str, str] = {}
+
+    sslmode = os.getenv("DB_SSLMODE", "").strip()
+    if sslmode:
+        query_options["sslmode"] = sslmode
+    elif host.endswith(".supabase.com"):
+        query_options["sslmode"] = "require"
+
+    query = f"?{urlencode(query_options)}" if query_options else ""
+    return f"postgresql+psycopg2://{auth}@{host_part}/{quote_plus(name)}{query}"
 
 
 DATABASE_URL = _configured_database_url()

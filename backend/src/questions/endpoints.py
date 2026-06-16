@@ -16,6 +16,8 @@ from questions.types import (
     PaperOutcome,
     PaperUpdate,
     QuestionDB,
+    QuestionOutcome,
+    QuestionSyllabusPointDB,
     paper_db_to_meta_read,
     paper_db_to_read,
     question_db_to_read,
@@ -451,7 +453,25 @@ def delete_paper(paper_id):
         if paper.author_id != str(user_id):
             return jsonify({"message": "Forbidden"}), 403
 
+        assets = session.exec(select(AssetDB).where(AssetDB.paper_id == paper_id)).all()
+        for asset in assets:
+            session.delete(asset)
+
         for question in paper.questions:
+            question_outcomes = session.exec(
+                select(QuestionOutcome).where(QuestionOutcome.question_id == question.id)
+            ).all()
+            for outcome in question_outcomes:
+                session.delete(outcome)
+
+            syllabus_points = session.exec(
+                select(QuestionSyllabusPointDB).where(
+                    QuestionSyllabusPointDB.question_id == question.id
+                )
+            ).all()
+            for syllabus_point in syllabus_points:
+                session.delete(syllabus_point)
+
             session.delete(question)
         for outcome in paper.outcomes:
             session.delete(outcome)

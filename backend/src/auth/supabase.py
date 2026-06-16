@@ -6,6 +6,7 @@ import jwt
 from jwt import PyJWKClient
 from jwt.exceptions import PyJWKClientError
 from settings import (
+    SUPABASE_JWT_AUDIENCE,
     SUPABASE_JWKS_URL,
     SUPABASE_JWT_ISSUER,
     SUPABASE_JWT_SECRET,
@@ -46,8 +47,25 @@ def _decode_supabase_token(token: str) -> dict[str, Any]:
 def _get_jwks_client() -> PyJWKClient:
     global _jwks_client
     if _jwks_client is None:
-        _jwks_client = PyJWKClient(SUPABASE_JWKS_URL)
+        _jwks_client = PyJWKClient(SUPABASE_JWKS_URL, lifespan=600)
     return _jwks_client
+
+
+def _unverified_claims(token: str) -> dict[str, Any]:
+    return jwt.decode(
+        token,
+        options={
+            "verify_signature": False,
+            "verify_exp": False,
+            "verify_aud": False,
+            "verify_iss": False,
+        },
+    )
+
+
+def _validate_supabase_claims(payload: dict[str, Any]) -> None:
+    if payload.get("role") != "authenticated":
+        raise jwt.InvalidTokenError("Supabase JWT is not for an authenticated user")
 
 
 def _decode_with_key(
@@ -55,19 +73,24 @@ def _decode_with_key(
     key,
     algorithms: list[str],
 ) -> dict[str, Any]:
-    options: dict[str, Any] = {}
+    claims = _unverified_claims(token)
+    has_audience = bool(claims.get("aud"))
+    options: dict[str, Any] = {"verify_aud": has_audience}
     kwargs: dict[str, Any] = {}
     if SUPABASE_JWT_ISSUER:
         kwargs["issuer"] = SUPABASE_JWT_ISSUER
+    if has_audience:
+        kwargs["audience"] = SUPABASE_JWT_AUDIENCE
 
-    return jwt.decode(
+    payload = jwt.decode(
         token,
         key,
         algorithms=algorithms,
-        audience="authenticated",
         options=options,
         **kwargs,
     )
+    _validate_supabase_claims(payload)
+    return payload
 
 
 def _sync_local_user(payload: dict[str, Any]) -> dict:
@@ -108,7 +131,8 @@ def authenticate_supabase_request(optional: bool = False):
         g.local_user = _sync_local_user(payload)
     except jwt.ExpiredSignatureError:
         return jsonify({"message": "Token expired"}), 401
-    except (jwt.InvalidTokenError, PyJWKClientError):
+    except (jwt.InvalidTokenError, PyJWKClientError) as e:
+        current_app.logger.info(f"Invalid Supabase token: {e}")
         if optional:
             return None
         return jsonify({"message": "Invalid token"}), 401

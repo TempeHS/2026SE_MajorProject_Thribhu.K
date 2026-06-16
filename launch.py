@@ -24,6 +24,7 @@ from collections import deque
 from dataclasses import dataclass
 from datetime import datetime
 from importlib import import_module
+from urllib.parse import quote_plus
 
 try:
     Align = import_module("rich.align").Align
@@ -379,6 +380,80 @@ def gcloud_config_value(gcloud, key):
     return value
 
 
+def load_project_env():
+    try:
+        from dotenv import load_dotenv
+    except ModuleNotFoundError:
+        return
+    load_dotenv(os.path.join(ROOT, ".env"))
+
+
+def build_supabase_database_url():
+    db_user = (os.getenv("DB_USER") or "").strip()
+    db_password = os.getenv("DB_PASSWORD") or ""
+    db_host = (os.getenv("DB_HOST") or "").strip()
+    db_port = (os.getenv("DB_PORT") or "5432").strip()
+    db_name = (os.getenv("DB_NAME") or "").strip()
+    if all([db_user, db_password, db_host, db_name]):
+        sslmode = (os.getenv("DB_SSLMODE") or "require").strip()
+        query = f"?sslmode={quote_plus(sslmode)}" if sslmode else ""
+        return (
+            "postgresql+psycopg2://"
+            f"{quote_plus(db_user)}:{quote_plus(db_password)}@"
+            f"{db_host}:{db_port}/{quote_plus(db_name)}{query}"
+        )
+
+    database_url = (os.getenv("DATABASE_URL") or "").strip()
+    if database_url:
+        return database_url
+
+    missing = [
+        key
+        for key, value in {
+            "DB_USER": db_user,
+            "DB_PASSWORD": db_password,
+            "DB_HOST": db_host,
+            "DB_NAME": db_name,
+        }.items()
+        if not value
+    ]
+    if missing:
+        fatal(
+            "Supabase database settings are missing",
+            "Set DATABASE_URL or "
+            + ", ".join(missing)
+            + " in .env before running `uv run launch.py --deploy gcp`.",
+        )
+
+
+def gcloud_env_vars_arg(env_vars):
+    delimiter = next(
+        (
+            candidate
+            for candidate in ("@", "|", "~", "%", ";", ":")
+            if all(candidate not in value for value in env_vars.values())
+        ),
+        None,
+    )
+    if delimiter is None:
+        fatal(
+            "Could not encode Cloud Run environment variables",
+            "One of the database environment values contains every supported gcloud delimiter.",
+        )
+    pairs = [f"{key}={value}" for key, value in env_vars.items()]
+    return f"^{delimiter}^" + delimiter.join(pairs)
+
+
+def cloud_run_database_env():
+    database_url = build_supabase_database_url()
+    env_vars = {"DATABASE_URL": database_url}
+    for key in ("DB_USER", "DB_PASSWORD", "DB_HOST", "DB_PORT", "DB_NAME", "DB_SSLMODE"):
+        value = os.getenv(key)
+        if value:
+            env_vars[key] = value.strip() if key != "DB_PASSWORD" else value
+    return env_vars
+
+
 def check_deploy_tools():
     git = find_command("git")
     gcloud = find_command("gcloud")
@@ -433,10 +508,12 @@ def copy_deploy_source(target_dir):
 
 
 def run_gcp_deploy():
+    load_project_env()
     tools = check_deploy_tools()
     git = tools["git"]
     gcloud = tools["gcloud"]
     js = tools["js"]
+    database_env = cloud_run_database_env()
 
     commit = run_capture(
         [git, "rev-parse", "--short=12", "HEAD"],
@@ -472,6 +549,7 @@ def run_gcp_deploy():
     table.add_row("Service", service)
     table.add_row("Region", region)
     table.add_row("Project", project or "(gcloud default)")
+    table.add_row("Database", os.getenv("DB_HOST", "(DATABASE_URL)"))
     table.add_row("Branch", branch)
     table.add_row("Commit", commit)
     console.print(table)
@@ -511,6 +589,9 @@ def run_gcp_deploy():
             deploy_source,
             "--region",
             region,
+            "--update-env-vars",
+            gcloud_env_vars_arg(database_env),
+            "--clear-cloudsql-instances",
             "--quiet",
         ]
         if project:

@@ -38,6 +38,7 @@ export function PapersViewer() {
     const [dragging, setDragging] = useState(false);
     const importInputRef = useRef<HTMLInputElement>(null);
     const { user, loading: authLoading } = useAuth();
+    const [importing, setImporting] = useState(false);
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -84,6 +85,7 @@ export function PapersViewer() {
         }
 
         let data: unknown;
+        setImporting(true);
         try {
             const text = await file.text();
             data = JSON.parse(text);
@@ -93,12 +95,15 @@ export function PapersViewer() {
                 : "Could not parse the selected file.";
             toast.error(`Invalid JSON: ${message}`);
             return;
+        } finally {
+            setImporting(false);
         }
 
         if (!isValidTpprPaper(data)) {
             toast.error(
                 "Invalid file - does not match the TPPR paper format.",
             );
+            setImporting(false);
             return;
         }
 
@@ -107,6 +112,7 @@ export function PapersViewer() {
         );
         if (alreadyExists) {
             toast.error(`A paper called "${data.title}" already exists.`);
+            setImporting(false);
             return;
         }
 
@@ -141,6 +147,8 @@ export function PapersViewer() {
         } catch (error) {
             console.warn(error);
             toast.error("Failed to import paper. Please try again.");
+        } finally {
+            setImporting(false);
         }
     }, [papers, user]);
 
@@ -266,6 +274,15 @@ export function PapersViewer() {
                 onDrop={handleDrop}
             >
                 <h1 className="mb-6 text-2xl font-bold">My Papers</h1>
+
+                {importing && (
+                    <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm">
+                        <div className="flex flex-col items-center gap-2">
+                            <Spinner className="size-8" />
+                            <p className="text-sm font-medium">Importing…</p>
+                        </div>
+                    </div>
+                )}
 
                 {dragging && (
                     <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm">

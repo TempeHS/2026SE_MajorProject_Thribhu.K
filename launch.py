@@ -179,35 +179,38 @@ class DependencyTUI:
         )
 
 
-def check_postgres_connection():
-    """Check that DATABASE_URL is set and PostgreSQL is reachable."""
+def check_database_connection():
+    """Check configured database, falling back to SQLite for local development."""
     from dotenv import load_dotenv
+    from urllib.parse import urlparse
     load_dotenv()
 
-    db_url = os.getenv("DATABASE_URL")
-    if not db_url:
-        fatal(
-            "DATABASE_URL is not set",
-            "Set DATABASE_URL in your .env file. See backend/README.md for setup instructions.",
-        )
+    db_url = (os.getenv("DATABASE_URL") or "").strip()
+    if not db_url or db_url == "your-postgres-database":
+        return ("SQLite", True, os.path.join(ROOT, "database.db"))
+
+    parsed = urlparse(db_url)
+    if parsed.scheme.startswith("sqlite"):
+        return ("SQLite", True, parsed.path or db_url)
+
+    if parsed.scheme not in {"postgres", "postgresql", "postgresql+psycopg2"}:
+        warn("DATABASE_URL is set but is not a recognised SQLite or PostgreSQL URL.")
+        return ("Database", False, parsed.scheme or db_url)
 
     try:
         import socket
-        from urllib.parse import urlparse
-
-        parsed = urlparse(db_url)
         host = parsed.hostname or "localhost"
         port = parsed.port or 5432
 
         sock = socket.create_connection((host, port), timeout=5)
         sock.close()
-        return True
+        return ("PostgreSQL", True, f"{host}:{port}")
     except OSError:
         warn(
             f"Cannot reach PostgreSQL at {host}:{port}. "
-            "Ensure the database server is running and accessible."
+            "Using local SQLite fallback for development."
         )
-        return False
+        return ("SQLite fallback", True, os.path.join(ROOT, "database.db"))
 
 
 def check_dependencies():
@@ -236,11 +239,11 @@ def check_dependencies():
         f"{runner} ({runner_reason})" if runner else "-",
     )
 
-    pg_reachable = check_postgres_connection()
+    db_kind, db_reachable, db_detail = check_database_connection()
     table.add_row(
-        "PostgreSQL",
-        "[green]reachable[/]" if pg_reachable else "[yellow]unreachable[/]",
-        os.getenv("DATABASE_URL", "(not set)").split("@")[-1] if os.getenv("DATABASE_URL") else "-",
+        db_kind,
+        "[green]ready[/]" if db_reachable else "[red]invalid[/]",
+        db_detail,
     )
 
     console.print(table)
@@ -251,11 +254,10 @@ def check_dependencies():
             "Install uv and bun, then run launch.py again.",
         )
 
-    if not pg_reachable:
+    if not db_reachable:
         fatal(
-            "PostgreSQL is not reachable",
-            "Start your PostgreSQL server or update DATABASE_URL in .env.\n"
-            "See backend/README.md for setup options (local install, Docker, or hosted).",
+            "Database is not configured correctly",
+            "Use SQLite by leaving DATABASE_URL unset, or set DATABASE_URL to a valid PostgreSQL URL.",
         )
 
     return {

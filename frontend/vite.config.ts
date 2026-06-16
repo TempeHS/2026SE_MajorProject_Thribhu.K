@@ -10,6 +10,7 @@ const base = process.env.VITE_BASE_PATH ?? '/'
 
 export default defineConfig({
   base,
+  envDir: path.resolve(dirname, '..'),
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

@@ -126,16 +126,16 @@ def swagger_json():
             "servers": [{"url": "/"}],
             "tags": [
                 {"name": "System", "description": "Health checks and API metadata."},
-                {"name": "Authentication", "description": "Registration, login, logout, and identity."},
-                {"name": "Account", "description": "Account profile, password, and 2FA management."},
+                {"name": "Authentication", "description": "Supabase identity and session validation."},
+                {"name": "Account", "description": "Local account profile and 2FA management."},
                 {"name": "Papers", "description": "Past paper search, authoring, publishing, and remixing."},
             ],
             "components": {
                 "securitySchemes": {
-                    "cookieAuth": {
-                        "type": "apiKey",
-                        "in": "cookie",
-                        "name": "access_token_cookie",
+                    "bearerAuth": {
+                        "type": "http",
+                        "scheme": "bearer",
+                        "bearerFormat": "Supabase JWT",
                     }
                 },
                 "schemas": {
@@ -155,7 +155,7 @@ def swagger_json():
                     "User": {
                         "type": "object",
                         "properties": {
-                            "user_id": {"type": "integer"},
+                            "user_id": {"type": "string"},
                             "username": {"type": "string"},
                             "email": {"type": "string", "format": "email"},
                         },
@@ -184,7 +184,7 @@ def swagger_json():
                         "type": "object",
                         "properties": {
                             "message": {"type": "string"},
-                            "user_id": {"type": "integer"},
+                            "user_id": {"type": "string"},
                             "requires_2fa": {"type": "boolean"},
                             "totp_secret": {"type": "string"},
                             "provisioning_uri": {"type": "string"},
@@ -502,72 +502,14 @@ def swagger_json():
                         },
                     }
                 },
-                "/api/register": {
-                    "post": {
-                        "tags": ["Authentication"],
-                        "summary": "Register a user",
-                        "description": "Creates a user. When 2FA is not enabled, the response also sets the access token cookie.",
-                        "requestBody": form_request_body(
-                            {
-                                "email": {"type": "string", "format": "email"},
-                                "username": {"type": "string"},
-                                "password": {"type": "string", "format": "password"},
-                                "enable_2fa": {"type": "boolean", "default": False},
-                            },
-                            ["email", "username", "password"],
-                        ),
-                        "responses": {
-                            "201": response(
-                                "User created",
-                                {"oneOf": [ref("AuthSuccess"), ref("RegisterTwoFactorRequired")]},
-                            ),
-                            "400": error_response("Invalid registration details"),
-                            "500": error_response("Database error"),
-                        },
-                    }
-                },
-                "/api/login": {
-                    "post": {
-                        "tags": ["Authentication"],
-                        "summary": "Log in",
-                        "description": "Authenticates by email or username and sets the access token cookie.",
-                        "requestBody": form_request_body(
-                            {
-                                "email": {
-                                    "type": "string",
-                                    "description": "Email address or username.",
-                                },
-                                "password": {"type": "string", "format": "password"},
-                            },
-                            ["email", "password"],
-                        ),
-                        "responses": {
-                            "200": response("Login successful", ref("AuthSuccess")),
-                            "400": error_response("Missing credentials"),
-                            "401": error_response("Invalid credentials"),
-                            "500": error_response("Login error"),
-                        },
-                    }
-                },
-                "/api/logout": {
-                    "post": {
-                        "tags": ["Authentication"],
-                        "summary": "Log out",
-                        "security": [{"cookieAuth": []}],
-                        "responses": {
-                            "200": message_response("Logout successful"),
-                            "401": error_response("Missing or invalid JWT"),
-                        },
-                    }
-                },
                 "/api/whoami": {
                     "get": {
                         "tags": ["Authentication"],
                         "summary": "Get the authenticated user",
-                        "security": [{"cookieAuth": []}],
+                        "security": [{"bearerAuth": []}],
                         "responses": {
                             "200": response("Authenticated user details", ref("WhoAmI")),
-                            "401": error_response("Missing or invalid JWT"),
+                            "401": error_response("Missing or invalid Supabase token"),
                             "404": error_response("User not found"),
                             "500": error_response("Failed to fetch user"),
                         },
@@ -577,20 +519,9 @@ def swagger_json():
                     "post": {
                         "tags": ["Authentication"],
                         "summary": "Verify a two-factor authentication code",
-                        "description": "Completes 2FA login or registration and sets the access token cookie.",
-                        "requestBody": form_request_body(
-                            {
-                                "user_id": {"type": "integer"},
-                                "totp_code": {"type": "string"},
-                            },
-                            ["user_id", "totp_code"],
-                        ),
+                        "description": "Legacy endpoint. Login and 2FA sessions are handled by Supabase Auth.",
                         "responses": {
-                            "200": response("2FA verified", ref("VerifyTwoFactorSuccess")),
-                            "400": error_response("Invalid 2FA request"),
-                            "401": error_response("Invalid 2FA code"),
-                            "404": error_response("User not found"),
-                            "500": error_response("2FA verification error"),
+                            "410": message_response("2FA login is handled by Supabase Auth"),
                         },
                     }
                 },
@@ -603,7 +534,7 @@ def swagger_json():
                                 "name": "user_id",
                                 "in": "query",
                                 "required": True,
-                                "schema": {"type": "integer"},
+                                "schema": {"type": "string"},
                             }
                         ],
                         "responses": {
@@ -612,7 +543,7 @@ def swagger_json():
                                 {
                                     "type": "object",
                                     "properties": {
-                                        "user_id": {"type": "integer"},
+                                        "user_id": {"type": "string"},
                                         "username": {"type": "string"},
                                     },
                                     "required": ["user_id", "username"],
@@ -627,7 +558,7 @@ def swagger_json():
                     "put": {
                         "tags": ["Account"],
                         "summary": "Update username",
-                        "security": [{"cookieAuth": []}],
+                        "security": [{"bearerAuth": []}],
                         "requestBody": form_request_body(
                             {"username": {"type": "string"}},
                             ["username"],
@@ -645,7 +576,7 @@ def swagger_json():
                                 },
                             ),
                             "400": error_response("Invalid or duplicate username"),
-                            "401": error_response("Missing or invalid JWT"),
+                            "401": error_response("Missing or invalid Supabase token"),
                             "404": error_response("User not found"),
                             "500": error_response("Failed to update username"),
                         },
@@ -655,7 +586,7 @@ def swagger_json():
                     "put": {
                         "tags": ["Account"],
                         "summary": "Update password",
-                        "security": [{"cookieAuth": []}],
+                        "security": [{"bearerAuth": []}],
                         "requestBody": form_request_body(
                             {
                                 "current_password": {"type": "string", "format": "password"},
@@ -670,7 +601,7 @@ def swagger_json():
                         "responses": {
                             "200": message_response("Password updated"),
                             "400": error_response("Missing password details"),
-                            "401": error_response("Invalid password, 2FA code, or JWT"),
+                            "401": error_response("Invalid password, 2FA code, or Supabase token"),
                             "404": error_response("User not found"),
                             "500": error_response("Failed to update password"),
                         },
@@ -680,10 +611,10 @@ def swagger_json():
                     "delete": {
                         "tags": ["Account"],
                         "summary": "Delete account",
-                        "security": [{"cookieAuth": []}],
+                        "security": [{"bearerAuth": []}],
                         "responses": {
                             "200": message_response("Account deleted"),
-                            "401": error_response("Missing or invalid JWT"),
+                            "401": error_response("Missing or invalid Supabase token"),
                             "404": error_response("User not found"),
                             "500": error_response("Failed to delete account"),
                         },
@@ -693,11 +624,11 @@ def swagger_json():
                     "post": {
                         "tags": ["Account"],
                         "summary": "Enable two-factor authentication",
-                        "security": [{"cookieAuth": []}],
+                        "security": [{"bearerAuth": []}],
                         "responses": {
                             "200": response("2FA setup details generated", ref("TwoFactorSetup")),
                             "400": error_response("2FA is already enabled"),
-                            "401": error_response("Missing or invalid JWT"),
+                            "401": error_response("Missing or invalid Supabase token"),
                             "404": error_response("User not found"),
                             "500": error_response("Failed to enable 2FA"),
                         },
@@ -707,7 +638,7 @@ def swagger_json():
                     "post": {
                         "tags": ["Account"],
                         "summary": "Disable two-factor authentication",
-                        "security": [{"cookieAuth": []}],
+                        "security": [{"bearerAuth": []}],
                         "requestBody": form_request_body(
                             {"totp_code": {"type": "string"}},
                             ["totp_code"],
@@ -715,7 +646,7 @@ def swagger_json():
                         "responses": {
                             "200": message_response("2FA disabled"),
                             "400": error_response("Missing 2FA code or 2FA disabled"),
-                            "401": error_response("Invalid 2FA code or JWT"),
+                            "401": error_response("Invalid 2FA code or Supabase token"),
                             "404": error_response("User not found"),
                             "500": error_response("Failed to disable 2FA"),
                         },
@@ -736,23 +667,23 @@ def swagger_json():
                     "get": {
                         "tags": ["Papers"],
                         "summary": "List authenticated user's papers",
-                        "security": [{"cookieAuth": []}],
+                        "security": [{"bearerAuth": []}],
                         "parameters": pagination_parameters(),
                         "responses": {
                             "200": response("User paper results", ref("PaperList")),
-                            "401": error_response("Missing or invalid JWT"),
+                            "401": error_response("Missing or invalid Supabase token"),
                             "500": error_response("Failed to list papers"),
                         },
                     },
                     "post": {
                         "tags": ["Papers"],
                         "summary": "Create a paper",
-                        "security": [{"cookieAuth": []}],
+                        "security": [{"bearerAuth": []}],
                         "requestBody": json_request_body(ref("PaperWrite")),
                         "responses": {
                             "201": response("Paper created", ref("Paper")),
                             "400": error_response("No data provided"),
-                            "401": error_response("Missing or invalid JWT"),
+                            "401": error_response("Missing or invalid Supabase token"),
                             "500": error_response("Failed to create paper"),
                         },
                     },
@@ -761,8 +692,8 @@ def swagger_json():
                     "get": {
                         "tags": ["Papers"],
                         "summary": "Get a paper",
-                        "description": "Public papers can be read without login. Private papers require the author's cookie.",
-                        "security": [{"cookieAuth": []}, {}],
+                        "description": "Public papers can be read without login. Private papers require the author's Supabase bearer token.",
+                        "security": [{"bearerAuth": []}, {}],
                         "parameters": [paper_id_parameter()],
                         "responses": {
                             "200": response("Paper details", ref("Paper")),
@@ -773,13 +704,13 @@ def swagger_json():
                     "put": {
                         "tags": ["Papers"],
                         "summary": "Update a paper",
-                        "security": [{"cookieAuth": []}],
+                        "security": [{"bearerAuth": []}],
                         "parameters": [paper_id_parameter()],
                         "requestBody": json_request_body(ref("PaperWrite")),
                         "responses": {
                             "200": response("Paper updated", ref("Paper")),
                             "400": error_response("No data provided"),
-                            "401": error_response("Missing or invalid JWT"),
+                            "401": error_response("Missing or invalid Supabase token"),
                             "403": error_response("Authenticated user is not the author"),
                             "404": error_response("Paper not found"),
                             "500": error_response("Failed to update paper"),
@@ -788,11 +719,11 @@ def swagger_json():
                     "delete": {
                         "tags": ["Papers"],
                         "summary": "Delete a paper",
-                        "security": [{"cookieAuth": []}],
+                        "security": [{"bearerAuth": []}],
                         "parameters": [paper_id_parameter()],
                         "responses": {
                             "200": message_response("Paper deleted"),
-                            "401": error_response("Missing or invalid JWT"),
+                            "401": error_response("Missing or invalid Supabase token"),
                             "403": error_response("Authenticated user is not the author"),
                             "404": error_response("Paper not found"),
                             "500": error_response("Failed to delete paper"),
@@ -804,13 +735,13 @@ def swagger_json():
                         "tags": ["Papers"],
                         "summary": "Publish a paper",
                         "description": "Marks an existing author-owned paper as public. If the paper does not exist, the JSON body is used to create it before publishing.",
-                        "security": [{"cookieAuth": []}],
+                        "security": [{"bearerAuth": []}],
                         "parameters": [paper_id_parameter()],
                         "requestBody": json_request_body(ref("PaperWrite"), required=False),
                         "responses": {
                             "200": response("Paper published", ref("PaperMeta")),
                             "400": error_response("Paper does not exist and no body was provided"),
-                            "401": error_response("Missing or invalid JWT"),
+                            "401": error_response("Missing or invalid Supabase token"),
                             "403": error_response("Authenticated user is not the author"),
                             "409": error_response("Paper is already public"),
                             "500": error_response("Failed to publish paper"),
@@ -819,11 +750,11 @@ def swagger_json():
                     "delete": {
                         "tags": ["Papers"],
                         "summary": "Unpublish a paper",
-                        "security": [{"cookieAuth": []}],
+                        "security": [{"bearerAuth": []}],
                         "parameters": [paper_id_parameter()],
                         "responses": {
                             "200": response("Paper unpublished", ref("PaperMeta")),
-                            "401": error_response("Missing or invalid JWT"),
+                            "401": error_response("Missing or invalid Supabase token"),
                             "403": error_response("Authenticated user is not the author"),
                             "404": error_response("Paper not found"),
                             "409": error_response("Paper is already private"),
@@ -836,11 +767,11 @@ def swagger_json():
                         "tags": ["Papers"],
                         "summary": "Remix a public paper",
                         "description": "Copies a public paper and its questions into the authenticated user's private library.",
-                        "security": [{"cookieAuth": []}],
+                        "security": [{"bearerAuth": []}],
                         "parameters": [paper_id_parameter()],
                         "responses": {
                             "201": response("Private remix created", ref("Paper")),
-                            "401": error_response("Missing or invalid JWT"),
+                            "401": error_response("Missing or invalid Supabase token"),
                             "403": error_response("Cannot remix a private paper"),
                             "404": error_response("Paper not found"),
                             "500": error_response("Failed to remix paper"),

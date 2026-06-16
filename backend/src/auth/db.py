@@ -1,17 +1,18 @@
 from datetime import UTC, datetime
 from logging import Logger
+import re
 from typing import Optional
 
-from sqlalchemy import or_
+from sqlalchemy import or_, text
 from sqlmodel import Field, Session, SQLModel, select
 
-from questions.db import engine
+from questions.db import DATABASE_URL, engine
 
 
 class UserDB(SQLModel, table=True):
     __tablename__ = "users"
 
-    user_id: int | None = Field(default=None, primary_key=True)
+    user_id: str = Field(primary_key=True)
     username: str = Field(unique=True, nullable=False)
     email: str = Field(unique=True, nullable=False)
     password_hash: str = Field(nullable=False)
@@ -24,8 +25,65 @@ class UserDB(SQLModel, table=True):
 class AuthenticationDB:
     def prepare(self, log: Logger):
         log.info("Preparing auth database tables")
+        self._migrate_sqlite_user_ids_to_text(log)
         SQLModel.metadata.create_all(engine)
         log.info("Users table ready")
+
+    def _migrate_sqlite_user_ids_to_text(self, log: Logger) -> None:
+        if not DATABASE_URL.startswith("sqlite:///"):
+            return
+
+        with engine.begin() as connection:
+            table_exists = connection.execute(
+                text(
+                    "SELECT name FROM sqlite_master "
+                    "WHERE type = 'table' AND name = 'users'"
+                )
+            ).first()
+            if not table_exists:
+                return
+
+            columns = connection.execute(text("PRAGMA table_info(users)")).all()
+            user_id_column = next(
+                (column for column in columns if column[1] == "user_id"),
+                None,
+            )
+            if not user_id_column or "INT" not in str(user_id_column[2]).upper():
+                return
+
+            log.info("Migrating users.user_id from integer to text for Supabase IDs")
+            connection.execute(text("ALTER TABLE users RENAME TO users_legacy_int_id"))
+
+        SQLModel.metadata.create_all(engine)
+
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    """
+                    INSERT INTO users (
+                        user_id,
+                        username,
+                        email,
+                        password_hash,
+                        totp_secret,
+                        totp_enabled,
+                        created_at,
+                        last_login
+                    )
+                    SELECT
+                        CAST(user_id AS TEXT),
+                        username,
+                        email,
+                        password_hash,
+                        totp_secret,
+                        totp_enabled,
+                        created_at,
+                        last_login
+                    FROM users_legacy_int_id
+                    """
+                )
+            )
+            connection.execute(text("DROP TABLE users_legacy_int_id"))
 
     def get_user_by_email(self, email: str) -> Optional[dict]:
         with Session(engine) as session:
@@ -63,14 +121,16 @@ class AuthenticationDB:
 
     def create_user(
         self,
+        user_id: str,
         username: str,
         email: str,
-        password_hash: str,
+        password_hash: str = "",
         totp_secret: Optional[str] = None,
         totp_enabled: bool = False,
-    ) -> int | None:
+    ) -> str:
         with Session(engine) as session:
             user = UserDB(
+                user_id=user_id,
                 username=username,
                 email=email,
                 password_hash=password_hash,
@@ -145,3 +205,71 @@ class AuthenticationDB:
                 user.totp_secret = None
                 user.totp_enabled = 0
                 session.commit()
+
+    def sync_supabase_user(
+        self,
+        *,
+        user_id: str,
+        email: str,
+        metadata: dict | None = None,
+    ) -> dict:
+        metadata = metadata or {}
+        with Session(engine) as session:
+            user = session.get(UserDB, user_id)
+            username = self._unique_username(
+                session,
+                self._preferred_username(email, metadata, user_id),
+                user_id,
+            )
+
+            if user:
+                user.email = email
+                if not user.username:
+                    user.username = username
+                user.last_login = datetime.now(UTC)
+            else:
+                user = UserDB(
+                    user_id=user_id,
+                    username=username,
+                    email=email,
+                    password_hash="",
+                    last_login=datetime.now(UTC),
+                )
+                session.add(user)
+
+            session.commit()
+            session.refresh(user)
+            return user.model_dump()
+
+    def _preferred_username(
+        self,
+        email: str,
+        metadata: dict,
+        user_id: str,
+    ) -> str:
+        raw = (
+            metadata.get("username")
+            or metadata.get("user_name")
+            or metadata.get("preferred_username")
+            or metadata.get("name")
+            or email.split("@", 1)[0]
+            or f"user-{user_id[:8]}"
+        )
+        username = re.sub(r"[^A-Za-z0-9_-]+", "-", str(raw)).strip("-_")
+        return username[:32] or f"user-{user_id[:8]}"
+
+    def _unique_username(
+        self,
+        session: Session,
+        preferred: str,
+        user_id: str,
+    ) -> str:
+        existing = session.exec(
+            select(UserDB).where(UserDB.username == preferred)
+        ).first()
+        if not existing or existing.user_id == user_id:
+            return preferred
+
+        suffix = user_id.replace("-", "")[:8]
+        base = preferred[: max(1, 32 - len(suffix) - 1)]
+        return f"{base}-{suffix}"
